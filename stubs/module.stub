@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Container\Contracts\ContainerInterface;
+use Zana\Container\Contracts\ServiceCollectionInterface;
+use Zana\Core\Module;
+
+final class {{ name }}Module extends Module
+{
+    public function name(): string
+    {
+        return '{{ name }}';
+    }
+
+    /**
+     * @return list<class-string<Module>>
+     */
+    public function dependsOn(): array
+    {
+        return [];
+    }
+
+    public function register(ServiceCollectionInterface $services): void
+    {
+        // Register this module's services, e.g.
+        // $services->scoped(PatientRepositoryInterface::class, PdoPatientRepository::class);
+    }
+
+    public function boot(ContainerInterface $container): void
+    {
+        // Add routes, listeners and handlers once the container is built.
+    }
+}

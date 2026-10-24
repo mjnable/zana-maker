@@ -1,0 +1,16 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Mediator\Attribute\Handles;
+
+#[Handles({{ message }}::class)]
+final class {{ name }}Handler
+{
+    public function __invoke({{ message }} $command): void
+    {
+        // Change state through the domain, e.g. load an aggregate, call it, save it.
+    }
+}

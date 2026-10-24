@@ -1,0 +1,14 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Ddd\Domain\RepositoryInterface;
+
+/**
+ * @extends RepositoryInterface<{{ name }}>
+ */
+interface {{ name }}RepositoryInterface extends RepositoryInterface
+{
+}

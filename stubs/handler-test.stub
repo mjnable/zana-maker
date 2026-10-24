@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use PHPUnit\Framework\TestCase;
+use {{ featureNamespace }}\{{ message }};
+use {{ featureNamespace }}\{{ name }}Handler;
+
+final class {{ name }}HandlerTest extends TestCase
+{
+    public function testItHandles{{ message }}(): void
+    {
+        $handler = new {{ name }}Handler();
+
+        $handler(new {{ message }}());
+
+        $this->markTestIncomplete('Assert what handling {{ message }} should do.');
+    }
+}

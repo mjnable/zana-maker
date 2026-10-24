@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Ddd\Domain\AggregateRoot;
+
+final class {{ name }} extends AggregateRoot
+{
+    private function __construct({{ name }}Id $id)
+    {
+        parent::__construct($id);
+    }
+
+    public static function create(): self
+    {
+        return new self({{ name }}Id::generate());
+    }
+
+    public function id(): {{ name }}Id
+    {
+        assert($this->id instanceof {{ name }}Id);
+
+        return $this->id;
+    }
+}

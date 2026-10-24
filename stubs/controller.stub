@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Routing\Attribute\Route;
+
+#[Route('/{{ path }}')]
+final class {{ name }}Controller
+{
+    /**
+     * @return array<string, mixed>
+     */
+    #[Route('', methods: ['GET'], name: '{{ route }}.index')]
+    public function index(): array
+    {
+        return ['data' => []];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    #[Route('/{id}', methods: ['GET'], name: '{{ route }}.show')]
+    public function show(string $id): array
+    {
+        return ['data' => ['id' => $id]];
+    }
+}

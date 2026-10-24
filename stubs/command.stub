@@ -1,0 +1,15 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Ddd\Application\Command;
+
+final class {{ message }} extends Command
+{
+    public function __construct()
+    {
+        parent::__construct();
+    }
+}

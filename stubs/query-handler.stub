@@ -1,0 +1,20 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Mediator\Attribute\Handles;
+
+#[Handles({{ message }}::class)]
+final class {{ name }}Handler
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public function __invoke({{ message }} $query): array
+    {
+        // Read and return data; queries change nothing.
+        return [];
+    }
+}

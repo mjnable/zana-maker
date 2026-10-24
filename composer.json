@@ -1,0 +1,42 @@
+{
+    "name": "mj-zana/maker",
+    "description": "Code generators for Zana modules, features, entities and controllers",
+    "type": "library",
+    "keywords": ["zana", "maker", "generator", "scaffolding", "modules"],
+    "license": "MIT",
+    "require": {
+        "php": "^8.5",
+        "mj-zana/console": "^2.0",
+        "mj-zana/core": "^2.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "Zana\\Maker\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Zana\\Maker\\Tests\\": "tests/"
+        }
+    },
+    "repositories": [
+        { "type": "path", "url": "../zana-container", "options": { "symlink": true, "versions": { "mj-zana/container": "2.0.0" } } },
+        { "type": "path", "url": "../zana-configuration", "options": { "symlink": true, "versions": { "mj-zana/configuration": "2.0.0" } } },
+        { "type": "path", "url": "../zana-core", "options": { "symlink": true, "versions": { "mj-zana/core": "2.0.0" } } },
+        { "type": "path", "url": "../zana-ddd", "options": { "symlink": true, "versions": { "mj-zana/ddd": "2.0.0" } } },
+        { "type": "path", "url": "../zana-console", "options": { "symlink": true, "versions": { "mj-zana/console": "2.0.0" } } }
+    ],
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse --memory-limit=1G"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
