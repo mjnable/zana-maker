@@ -16,6 +16,14 @@ final class Generator
 {
     private const string NAME = '/^[A-Z][A-Za-z0-9]*$/';
 
+    /** Marker comments in the generated module class; wiring lines go above them. */
+    public const string SERVICES_MARKER = '// zana:maker services';
+
+    public const string BOOT_MARKER = '// zana:maker boot';
+
+    /** @var list<string> */
+    private array $manualSteps = [];
+
     public function __construct(private readonly string $basePath)
     {
     }
@@ -28,6 +36,7 @@ final class Generator
     public function planModule(string $name): array
     {
         self::validate($name, 'module');
+        $this->manualSteps = [];
         $class = "Modules\\{$name}\\{$name}Module";
 
         $files = [$this->file("modules/{$name}/{$name}Module.php", 'module', ['name' => $name, 'module' => $name, 'namespace' => "Modules\\{$name}"])];
@@ -62,11 +71,13 @@ final class Generator
             'message' => "{$name}{$kind}",
         ];
 
-        return [
+        $handler = '\\' . $values['namespace'] . "\\{$name}Handler::class";
+
+        return $this->withWiring($module, [
             $this->file("modules/{$module}/Application/Features/{$name}/{$name}{$kind}.php", $query ? 'query' : 'command', $values),
             $this->file("modules/{$module}/Application/Features/{$name}/{$name}Handler.php", $query ? 'query-handler' : 'command-handler', $values),
             $this->file("modules/{$module}/Tests/Application/{$name}HandlerTest.php", 'handler-test', [...$values, 'namespace' => "Modules\\{$module}\\Tests\\Application", 'featureNamespace' => $values['namespace']]),
-        ];
+        ], ["\$services->scoped({$handler});"], ["\$container->get(\\Zana\\Mediator\\HandlerMap::class)->register({$handler});"]);
     }
 
     /**
@@ -78,6 +89,7 @@ final class Generator
     {
         $this->requireModule($module);
         self::validate($name, 'entity');
+        $this->manualSteps = [];
         $values = ['module' => $module, 'name' => $name, 'namespace' => "Modules\\{$module}\\Domain"];
 
         return [
@@ -98,13 +110,83 @@ final class Generator
         self::validate($name, 'controller');
         $slug = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $name));
 
-        return [$this->file("modules/{$module}/Presentation/Api/{$name}Controller.php", 'controller', [
+        $controller = "\\Modules\\{$module}\\Presentation\\Api\\{$name}Controller::class";
+
+        return $this->withWiring($module, [$this->file("modules/{$module}/Presentation/Api/{$name}Controller.php", 'controller', [
             'module' => $module,
             'name' => $name,
             'namespace' => "Modules\\{$module}\\Presentation\\Api",
             'path' => $slug,
             'route' => strtolower($module) . ".{$slug}",
-        ])];
+        ])], ["\$services->transient({$controller});"], ["\$container->get(\\Zana\\Routing\\Router::class)->loadAttributes({$controller});"]);
+    }
+
+    /**
+     * What the last plan could not wire into the module class (it has no
+     * zana:maker markers), as lines for the user to add. Empty when the plan
+     * wired everything itself.
+     *
+     * @return list<string>
+     */
+    public function manualSteps(): array
+    {
+        return $this->manualSteps;
+    }
+
+    /**
+     * Add the module-class update that registers the generated classes, or
+     * record manual steps when the module class has no markers.
+     *
+     * @param list<GeneratedFile> $files
+     * @param list<string> $services Lines for register()
+     * @param list<string> $boot Lines for boot()
+     *
+     * @return list<GeneratedFile>
+     */
+    private function withWiring(string $module, array $files, array $services, array $boot): array
+    {
+        $this->manualSteps = [];
+        $relative = "modules/{$module}/{$module}Module.php";
+        $code = (string) file_get_contents($this->path($relative));
+
+        if (!str_contains($code, self::SERVICES_MARKER) || !str_contains($code, self::BOOT_MARKER)) {
+            foreach ($services as $line) {
+                $this->manualSteps[] = "In {$module}Module::register(): {$line}";
+            }
+            foreach ($boot as $line) {
+                $this->manualSteps[] = "In {$module}Module::boot(): {$line}";
+            }
+
+            return $files;
+        }
+
+        $updated = self::insertBefore(self::insertBefore($code, self::SERVICES_MARKER, $services), self::BOOT_MARKER, $boot);
+        if ($updated !== $code) {
+            $files[] = new GeneratedFile($this->path($relative), $relative, $updated, update: true);
+        }
+
+        return $files;
+    }
+
+    /**
+     * Insert lines above the marker, with its indentation; lines already in
+     * the code are skipped, so generating twice wires once.
+     *
+     * @param list<string> $lines
+     */
+    private static function insertBefore(string $code, string $marker, array $lines): string
+    {
+        $lines = array_values(array_filter($lines, static fn (string $line): bool => !str_contains($code, $line)));
+        if ($lines === []) {
+            return $code;
+        }
+
+        return (string) preg_replace_callback(
+            '/^([ \t]*)' . preg_quote($marker, '/') . '/m',
+            static fn (array $m): string => implode('', array_map(static fn (string $line): string => $m[1] . $line . "\n", $lines)) . $m[0],
+            $code,
+            1,
+        );
     }
 
     /**

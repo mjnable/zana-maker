@@ -6,7 +6,7 @@ namespace {{ namespace }};
 
 use Zana\Routing\Attribute\Route;
 
-#[Route('/{{ path }}')]
+#[Route('/api/{{ path }}')]
 final class {{ name }}Controller
 {
     /**

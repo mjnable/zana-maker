@@ -42,6 +42,7 @@ abstract class MakerCommand extends Command
             if ((bool) $input->getOption('dry-run')) {
                 $io->writeln('Dry run; nothing was written.');
                 $io->listing(array_map(static fn (array $action): string => "would {$action[0]} {$action[1]}", $actions));
+                self::manualSteps($generator, $io);
 
                 return self::SUCCESS;
             }
@@ -55,7 +56,16 @@ abstract class MakerCommand extends Command
 
         $io->listing(array_map(static fn (array $action): string => "{$action[0]}d {$action[1]}", $actions));
         $io->success(sprintf('Generated %d file%s.', count($files), count($files) === 1 ? '' : 's'));
+        self::manualSteps($generator, $io);
 
         return self::SUCCESS;
+    }
+
+    private static function manualSteps(Generator $generator, SymfonyStyle $io): void
+    {
+        if ($generator->manualSteps() !== []) {
+            $io->warning('The module class has no zana:maker markers, so wire the new classes yourself:');
+            $io->listing($generator->manualSteps());
+        }
     }
 }

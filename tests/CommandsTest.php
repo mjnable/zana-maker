@@ -61,7 +61,8 @@ final class CommandsTest extends TestCase
         $this->assertSame(0, $code);
         [$code, $output] = $this->execute(['command' => 'make:controller', 'module' => 'Patients', 'name' => 'Patients']);
         $this->assertSame(0, $code);
-        $this->assertStringContainsString('Generated 1 file.', $output);
+        $this->assertStringContainsString('updated modules/Patients/PatientsModule.php', $output, 'the controller is wired into the module');
+        $this->assertStringContainsString('Generated 2 files.', $output);
 
         [$code, $output] = $this->execute(['command' => 'make:entity', 'module' => 'Patients', 'name' => 'Patient']);
         $this->assertSame(1, $code);

@@ -119,7 +119,9 @@ final class GeneratorTest extends TestCase
             'modules/Patients/Application/Features/RegisterPatient/RegisterPatientCommand.php',
             'modules/Patients/Application/Features/RegisterPatient/RegisterPatientHandler.php',
             'modules/Patients/Tests/Application/RegisterPatientHandlerTest.php',
+            'modules/Patients/PatientsModule.php',
         ], self::paths($command));
+        $this->assertTrue($command[3]->update, 'the module class is updated, not replaced');
         $this->generator->write($command);
         $this->assertStringContainsString('namespace Modules\Patients\Application\Features\RegisterPatient;', $command[0]->contents);
         $this->assertStringContainsString('final class RegisterPatientCommand extends Command', $command[0]->contents);
@@ -149,15 +151,56 @@ final class GeneratorTest extends TestCase
         $this->assertStringContainsString('@extends RepositoryInterface<Patient>', $entity[2]->contents);
 
         $controller = $this->generator->planController('Patients', 'MedicalRecords');
-        $this->assertSame(['modules/Patients/Presentation/Api/MedicalRecordsController.php'], self::paths($controller));
+        $this->assertSame(['modules/Patients/Presentation/Api/MedicalRecordsController.php', 'modules/Patients/PatientsModule.php'], self::paths($controller));
         $this->assertStringContainsString('namespace Modules\Patients\Presentation\Api;', $controller[0]->contents);
-        $this->assertStringContainsString("#[Route('/medical-records')]", $controller[0]->contents);
+        $this->assertStringContainsString("#[Route('/api/medical-records')]", $controller[0]->contents);
         $this->assertStringContainsString("name: 'patients.medical-records.index'", $controller[0]->contents);
 
         $this->generator->write([...$entity, ...$controller]);
         foreach ([...$entity, ...$controller] as $file) {
             $this->assertCompiles($file->relativePath);
         }
+    }
+
+    public function testFeaturesAndControllersAreWiredIntoTheModule(): void
+    {
+        $this->generator->write($this->generator->planModule('Patients'));
+        $this->generator->write($this->generator->planFeature('Patients', 'RegisterPatient'));
+        $this->generator->write($this->generator->planController('Patients', 'Patients'));
+        $this->assertSame([], $this->generator->manualSteps());
+
+        $module = $this->read('modules/Patients/PatientsModule.php');
+        $this->assertStringContainsString(
+            "        \$services->scoped(\\Modules\\Patients\\Application\\Features\\RegisterPatient\\RegisterPatientHandler::class);\n"
+            . "        \$services->transient(\\Modules\\Patients\\Presentation\\Api\\PatientsController::class);\n"
+            . '        ' . Generator::SERVICES_MARKER,
+            $module,
+            'lines go above the marker, with its indentation, in generation order',
+        );
+        $this->assertStringContainsString("\$container->get(\\Zana\\Mediator\\HandlerMap::class)->register(\\Modules\\Patients\\Application\\Features\\RegisterPatient\\RegisterPatientHandler::class);", $module);
+        $this->assertStringContainsString("\$container->get(\\Zana\\Routing\\Router::class)->loadAttributes(\\Modules\\Patients\\Presentation\\Api\\PatientsController::class);", $module);
+        $this->assertCompiles('modules/Patients/PatientsModule.php');
+
+        $again = $this->generator->planFeature('Patients', 'RegisterPatient');
+        $this->assertNotContains('modules/Patients/PatientsModule.php', self::paths($again), 'already wired: the module is left alone');
+    }
+
+    public function testModulesWithoutMarkersGetManualSteps(): void
+    {
+        $this->generator->write($this->generator->planModule('Patients'));
+        $path = "{$this->base}/modules/Patients/PatientsModule.php";
+        file_put_contents($path, str_replace([Generator::SERVICES_MARKER, Generator::BOOT_MARKER], '', (string) file_get_contents($path)));
+
+        $plan = $this->generator->planFeature('Patients', 'FindPatient', query: true);
+
+        $this->assertNotContains('modules/Patients/PatientsModule.php', self::paths($plan));
+        $this->assertSame([
+            'In PatientsModule::register(): $services->scoped(\Modules\Patients\Application\Features\FindPatient\FindPatientHandler::class);',
+            'In PatientsModule::boot(): $container->get(\Zana\Mediator\HandlerMap::class)->register(\Modules\Patients\Application\Features\FindPatient\FindPatientHandler::class);',
+        ], $this->generator->manualSteps());
+
+        $this->generator->planEntity('Patients', 'Patient');
+        $this->assertSame([], $this->generator->manualSteps(), 'each plan starts afresh');
     }
 
     public function testNamesAreValidated(): void

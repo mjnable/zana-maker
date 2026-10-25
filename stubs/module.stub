@@ -27,10 +27,12 @@ final class {{ name }}Module extends Module
     {
         // Register this module's services, e.g.
         // $services->scoped(PatientRepositoryInterface::class, PdoPatientRepository::class);
+        // zana:maker services (make:feature and make:controller add lines above; keep this line)
     }
 
     public function boot(ContainerInterface $container): void
     {
-        // Add routes, listeners and handlers once the container is built.
+        // Map handlers, add routes and listeners once the container is built.
+        // zana:maker boot (make:feature and make:controller add lines above; keep this line)
     }
 }
