@@ -1,0 +1,16 @@
+<?php $this->layout('@{{ module }}/admin/layout', ['title' => '{{ title }}']) ?>
+<h1>{{ title }}</h1>
+<?php if ($status !== null): ?><p class="flash"><?= $status ?></p><?php endif ?>
+<p><a href="<?= $this->url('{{ route }}.create') ?>">New</a></p>
+<table>
+  <thead><tr><th>Title</th><th>Status</th><th>Updated</th></tr></thead>
+  <tbody>
+<?php foreach ($items as $item): ?>
+    <tr>
+      <td><a href="<?= $this->url('{{ route }}.edit', ['id' => $item['id']]) ?>"><?= $item['title'] !== '' ? $item['title'] : '(untitled)' ?></a></td>
+      <td><?= $item['status'] ?></td>
+      <td><?= $item['updated_at'] ?></td>
+    </tr>
+<?php endforeach ?>
+  </tbody>
+</table>

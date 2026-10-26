@@ -1,0 +1,28 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Routing\Router;
+use Zana\Routing\UrlGenerator;
+use Zana\View\PageMeta;
+use Zana\View\View;
+
+/**
+ * The "{{ route }}" page, one URL per locale.
+ */
+final readonly class {{ name }}Page
+{
+    public static function routes(Router $router): void
+    {
+        $router->localized({{ paths }}, self::class)->name('{{ route }}')->meta(['sitemap' => true]);
+    }
+
+    public function __invoke(PageMeta $meta, UrlGenerator $urls): View
+    {
+        $meta->canonical($urls->generate('{{ route }}'))->alternates($urls->alternates('{{ route }}'));
+
+        return View::make('@{{ module }}/pages/{{ path }}', ['page' => '{{ route }}']);
+    }
+}

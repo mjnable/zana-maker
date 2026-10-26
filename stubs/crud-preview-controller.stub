@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Modules\{{ module }}\Infrastructure\{{ name }}Repository;
+use Zana\Http\Exception\NotFoundHttpException;
+use Zana\Security\InvalidTokenException;
+use Zana\Security\TokenSigner;
+use Zana\View\View;
+
+/**
+ * Shows a draft to anyone holding a signed preview link.
+ */
+final readonly class {{ name }}Preview
+{
+    public function __construct(private {{ name }}Repository $records, private TokenSigner $signer)
+    {
+    }
+
+    public function __invoke(string $token): View
+    {
+        try {
+            $subject = $this->signer->verify($token)->subject;
+        } catch (InvalidTokenException) {
+            throw new NotFoundHttpException();
+        }
+        $id = str_starts_with($subject, '{{ route }}:') ? substr($subject, strlen('{{ route }}:')) : '';
+        $record = $this->records->find($id) ?? throw new NotFoundHttpException();
+
+        return View::make('@{{ module }}/admin/{{ path }}/preview', ['translations' => $record['translations']])->withHeader('X-Robots-Tag', 'noindex');
+    }
+}

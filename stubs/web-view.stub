@@ -1,0 +1,2 @@
+<?php $this->layout('layouts/site', ['title' => $title]) ?>
+<h1><?= $title ?></h1>

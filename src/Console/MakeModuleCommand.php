@@ -7,6 +7,7 @@ namespace Zana\Maker\Console;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Zana\Maker\Generator;
 
@@ -16,11 +17,13 @@ final class MakeModuleCommand extends MakerCommand
     protected function configure(): void
     {
         parent::configure();
-        $this->addArgument('name', InputArgument::REQUIRED, 'The module name, e.g. Patients');
+        $this
+            ->addArgument('name', InputArgument::REQUIRED, 'The module name, e.g. Patients')
+            ->addOption('web', null, InputOption::VALUE_NONE, 'Add Presentation/Web and the Resources/views and Resources/translations folders');
     }
 
     public function handle(Generator $generator, InputInterface $input, SymfonyStyle $io): int
     {
-        return $this->generate($generator, static fn (): array => $generator->planModule((string) $input->getArgument('name')), $input, $io);
+        return $this->generate($generator, static fn (): array => $generator->planModule((string) $input->getArgument('name'), (bool) $input->getOption('web')), $input, $io);
     }
 }

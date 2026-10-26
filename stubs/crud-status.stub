@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+/**
+ * The publication workflow: draft → published → archived, and back.
+ */
+enum {{ name }}Status: string
+{
+    case Draft = 'draft';
+    case Published = 'published';
+    case Archived = 'archived';
+
+    public function canPublish(): bool
+    {
+        return $this !== self::Published;
+    }
+
+    public function canArchive(): bool
+    {
+        return $this === self::Published;
+    }
+}

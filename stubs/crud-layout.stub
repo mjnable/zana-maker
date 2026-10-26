@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="robots" content="noindex"><title><?= $title ?> | Back office</title></head>
+<body>
+  <main><?= $this->section('content') ?></main>
+</body>
+</html>

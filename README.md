@@ -39,6 +39,29 @@ php bin/zana make:entity Patients Patient              # aggregate root, Patient
 php bin/zana make:controller Patients Measurements     # Presentation/Api/MeasurementsController, routed at /api/measurements
 ```
 
+For websites:
+
+```
+php bin/zana make:module Site --web                    # plus Presentation/Web, Resources/views, Resources/translations
+php bin/zana make:controller Site News --web           # Presentation/Web/NewsController returning a View, and its template
+php bin/zana make:page Site About --path=en:/about --path=fr:/a-propos   # a localised page with SEO metadata and its template
+php bin/zana make:crud Blog Post --translatable        # back-office screens for posts in every locale
+```
+
+`make:crud` generates a back office that works as soon as it is written.
+It needs `mj-zana/view`, `session`, `security` (with a
+`PasswordUserProviderInterface`) and `database`.
+
+- **Status:** a draft, published or archived enum.
+- **Storage:** a migration with a translations table (one row per locale,
+  with a slug), and a repository.
+- **Screens:** list, create and edit, with one fieldset per locale. Publish,
+  archive and delete are POST requests with CSRF, and delete has a
+  confirmation step.
+- **Preview:** drafts get a signed preview link, valid for an hour.
+- **Access:** the screens are behind session login and the `<items>.edit`
+  permission (e.g. `posts.edit`).
+
 - **Wiring:** a generated module works straight away.
   - `make:module` writes two marker comments into the module class, one in
     `register()` and one in `boot()`.

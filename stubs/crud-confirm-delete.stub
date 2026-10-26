@@ -1,0 +1,8 @@
+<?php $this->layout('@{{ module }}/admin/layout', ['title' => 'Delete']) ?>
+<h1>Delete “<?= $title ?>”?</h1>
+<p>This cannot be undone.</p>
+<form method="post" action="<?= $this->url('{{ route }}.delete', ['id' => $id]) ?>">
+  <?= $this->csrf_field() ?>
+  <button>Delete</button>
+  <a href="<?= $this->url('{{ route }}.edit', ['id' => $id]) ?>">Cancel</a>
+</form>

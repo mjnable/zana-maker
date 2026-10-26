@@ -1,0 +1,8 @@
+<?php $this->layout('@{{ module }}/admin/layout', ['title' => 'Preview']) ?>
+<p class="preview-banner">Preview of a draft: not published.</p>
+<?php foreach ($translations as $locale => $text): ?>
+<article lang="<?= $locale ?>">
+  <h1><?= $text['title'] ?></h1>
+  <div><?= nl2br($text['body']) ?></div>
+</article>
+<?php endforeach ?>

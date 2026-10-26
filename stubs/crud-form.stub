@@ -1,0 +1,25 @@
+<?php $this->layout('@{{ module }}/admin/layout', ['title' => '{{ title }}']) ?>
+<h1><?= $id === null ? 'New' : 'Edit' ?> — {{ title }}</h1>
+<?php if ($flash !== null): ?><p class="flash"><?= $flash ?></p><?php endif ?>
+<?php if ($status !== null): ?><p>Status: <strong><?= $status ?></strong><?php if ($preview !== null): ?> · <a href="<?= $preview ?>" target="_blank" rel="noopener">Preview</a><?php endif ?></p><?php endif ?>
+
+<form method="post" action="<?= $id === null ? $this->url('{{ route }}.store') : $this->url('{{ route }}.update', ['id' => $id]) ?>">
+  <?= $this->csrf_field() ?>
+<?php foreach ($locales as $locale): ?>
+  <fieldset>
+    <legend><?= $locale ?></legend>
+    <label>Title <input name="title_<?= $locale ?>" value="<?= $values[$locale]['title'] ?? '' ?>"></label>
+<?php if (isset($errors["title_{$locale}"])): ?><p class="error"><?= $errors["title_{$locale}"] ?></p><?php endif ?>
+    <label>Slug <input name="slug_<?= $locale ?>" value="<?= $values[$locale]['slug'] ?? '' ?>" placeholder="made from the title"></label>
+    <label>Body <textarea name="body_<?= $locale ?>" rows="12"><?= $values[$locale]['body'] ?? '' ?></textarea></label>
+<?php if (!isset($values[$locale]) || ($values[$locale]['title'] ?? '') === ''): ?><p class="missing">Not translated yet: this locale stays unpublished.</p><?php endif ?>
+  </fieldset>
+<?php endforeach ?>
+  <button>Save</button>
+</form>
+
+<?php if ($id !== null): ?>
+<form method="post" action="<?= $this->url('{{ route }}.publish', ['id' => $id]) ?>"><?= $this->csrf_field() ?><button>Publish</button></form>
+<form method="post" action="<?= $this->url('{{ route }}.archive', ['id' => $id]) ?>"><?= $this->csrf_field() ?><button>Archive</button></form>
+<p><a href="<?= $this->url('{{ route }}.confirm-delete', ['id' => $id]) ?>">Delete…</a></p>
+<?php endif ?>

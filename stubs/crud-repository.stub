@@ -1,0 +1,105 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Modules\{{ module }}\Domain\{{ name }}Status;
+use Zana\Database\ConnectionInterface;
+use Zana\Ddd\Domain\Uuid;
+
+/**
+ * {{ name }} records and their translations.
+ */
+final readonly class {{ name }}Repository
+{
+    public function __construct(private ConnectionInterface $db)
+    {
+    }
+
+    /**
+     * @return list<array{id: string, status: {{ name }}Status, updated_at: string, title: string}>
+     */
+    public function all(string $locale): array
+    {
+        $rows = $this->db->select(
+            'SELECT r.id, r.status, r.updated_at, COALESCE(t.title, \'\') AS title FROM {{ table }} r '
+            . 'LEFT JOIN {{ table }}_translations t ON t.{{ foreign }}_id = r.id AND t.locale = ? ORDER BY r.updated_at DESC',
+            [$locale],
+        );
+
+        return array_map(static fn (array $row): array => [
+            'id' => (string) $row['id'],
+            'status' => {{ name }}Status::from((string) $row['status']),
+            'updated_at' => (string) $row['updated_at'],
+            'title' => (string) $row['title'],
+        ], $rows);
+    }
+
+    /**
+     * @return array{id: string, status: {{ name }}Status, translations: array<string, array{title: string, slug: string, body: string}>}|null
+     */
+    public function find(string $id): ?array
+    {
+        $row = $this->db->table('{{ table }}')->where('id', $id)->first();
+        if ($row === null) {
+            return null;
+        }
+
+        $translations = [];
+        foreach ($this->db->table('{{ table }}_translations')->where('{{ foreign }}_id', $id)->get() as $translation) {
+            $translations[(string) $translation['locale']] = [
+                'title' => (string) $translation['title'],
+                'slug' => (string) $translation['slug'],
+                'body' => (string) $translation['body'],
+            ];
+        }
+
+        return ['id' => $id, 'status' => {{ name }}Status::from((string) $row['status']), 'translations' => $translations];
+    }
+
+    /**
+     * Create or update the record's translations; returns its id.
+     *
+     * @param array<string, array{title: string, slug: string, body: string}> $translations locale => text; blank titles are left out
+     */
+    public function save(?string $id, array $translations): string
+    {
+        $now = gmdate('Y-m-d H:i:s');
+
+        return $this->db->transaction(function () use ($id, $translations, $now): string {
+            if ($id === null) {
+                $id = Uuid::v7();
+                $this->db->table('{{ table }}')->insert(['id' => $id, 'status' => {{ name }}Status::Draft->value, 'created_at' => $now, 'updated_at' => $now]);
+            } else {
+                $this->db->table('{{ table }}')->where('id', $id)->update(['updated_at' => $now]);
+            }
+
+            $this->db->table('{{ table }}_translations')->where('{{ foreign }}_id', $id)->delete();
+            foreach ($translations as $locale => $text) {
+                if (trim($text['title']) !== '') {
+                    $this->db->table('{{ table }}_translations')->insert(['{{ foreign }}_id' => $id, 'locale' => $locale, ...$text]);
+                }
+            }
+
+            return $id;
+        });
+    }
+
+    public function setStatus(string $id, {{ name }}Status $status): void
+    {
+        $values = ['status' => $status->value, 'updated_at' => gmdate('Y-m-d H:i:s')];
+        if ($status === {{ name }}Status::Published) {
+            $values['published_at'] = gmdate('Y-m-d H:i:s');
+        }
+        $this->db->table('{{ table }}')->where('id', $id)->update($values);
+    }
+
+    public function delete(string $id): void
+    {
+        $this->db->transaction(function () use ($id): void {
+            $this->db->table('{{ table }}_translations')->where('{{ foreign }}_id', $id)->delete();
+            $this->db->table('{{ table }}')->where('id', $id)->delete();
+        });
+    }
+}

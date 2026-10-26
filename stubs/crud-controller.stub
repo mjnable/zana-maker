@@ -1,0 +1,190 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Modules\{{ module }}\Domain\{{ name }}Status;
+use Modules\{{ module }}\Infrastructure\{{ name }}Repository;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Zana\Http\Exception\NotFoundHttpException;
+use Zana\Http\FormInput;
+use Zana\Http\ResponseFactory;
+use Zana\Routing\Router;
+use Zana\Routing\UrlGenerator;
+use Zana\Security\Attribute\RequiresPermission;
+use Zana\Security\Middleware\AuthorizationMiddleware;
+use Zana\Security\Middleware\CsrfMiddleware;
+use Zana\Security\Session\SessionAuthenticationMiddleware;
+use Zana\Security\TokenSigner;
+use Zana\Session\SessionInterface;
+use Zana\Session\SessionMiddleware;
+use Zana\View\View;
+
+/**
+ * The back-office screens for {{ name }}: list, create, edit, publish,
+ * archive, delete (with a confirmation step), and a signed preview link for
+ * drafts. Editors need the "{{ permission }}" permission.
+ */
+#[RequiresPermission('{{ permission }}')]
+final readonly class {{ name }}AdminController
+{
+    /** The locales an editor writes in; the first one is required. */
+    private const array LOCALES = {{ locales }};
+
+    public function __construct(
+        private {{ name }}Repository $records,
+        private SessionInterface $session,
+        private UrlGenerator $urls,
+        private ResponseFactory $responses,
+    ) {
+    }
+
+    public static function routes(Router $router): void
+    {
+        $router->group('/admin/{{ path }}', static function (Router $r): void {
+            $r->get('', [self::class, 'index'])->name('{{ route }}.index');
+            $r->get('/new', [self::class, 'create'])->name('{{ route }}.create');
+            $r->post('', [self::class, 'store'])->name('{{ route }}.store');
+            $r->get('/{id}/edit', [self::class, 'edit'])->name('{{ route }}.edit');
+            $r->post('/{id}', [self::class, 'update'])->name('{{ route }}.update');
+            $r->post('/{id}/publish', [self::class, 'publish'])->name('{{ route }}.publish');
+            $r->post('/{id}/archive', [self::class, 'archive'])->name('{{ route }}.archive');
+            $r->get('/{id}/delete', [self::class, 'confirmDelete'])->name('{{ route }}.confirm-delete');
+            $r->post('/{id}/delete', [self::class, 'delete'])->name('{{ route }}.delete');
+        }, [SessionMiddleware::class, SessionAuthenticationMiddleware::class, AuthorizationMiddleware::class, CsrfMiddleware::class]);
+
+        // Outside the back office: anyone with the signed link sees the draft, for an hour.
+        $router->get('/preview/{{ path }}/{token}', [{{ name }}Preview::class, '__invoke'])->name('{{ route }}.preview');
+    }
+
+    public function index(): View
+    {
+        return View::make('@{{ module }}/admin/{{ path }}/index', [
+            'items' => array_map(static fn (array $item): array => [...$item, 'status' => $item['status']->value], $this->records->all(self::LOCALES[0])),
+            'status' => $this->session->getFlash('status'),
+        ]);
+    }
+
+    public function create(): View
+    {
+        return $this->form(null, [], []);
+    }
+
+    public function store(ServerRequestInterface $request): View|ResponseInterface
+    {
+        [$translations, $errors] = self::read($request);
+        if ($errors !== []) {
+            return $this->form(null, $translations, $errors)->withStatus(422);
+        }
+        $id = $this->records->save(null, $translations);
+
+        return $this->back("{{ route }}.edit", ['id' => $id], 'Saved as a draft.');
+    }
+
+    public function edit(string $id, TokenSigner $signer): View
+    {
+        $record = $this->records->find($id) ?? throw new NotFoundHttpException();
+
+        return $this->form($record, $record['translations'], [])->with([
+            'preview' => $this->urls->generate('{{ route }}.preview', ['token' => $signer->issue("{{ route }}:{$id}", 3600)]),
+        ]);
+    }
+
+    public function update(string $id, ServerRequestInterface $request): View|ResponseInterface
+    {
+        $record = $this->records->find($id) ?? throw new NotFoundHttpException();
+        [$translations, $errors] = self::read($request);
+        if ($errors !== []) {
+            return $this->form($record, $translations, $errors)->withStatus(422);
+        }
+        $this->records->save($id, $translations);
+
+        return $this->back("{{ route }}.edit", ['id' => $id], 'Saved.');
+    }
+
+    public function publish(string $id): ResponseInterface
+    {
+        $record = $this->records->find($id) ?? throw new NotFoundHttpException();
+        if ($record['status']->canPublish()) {
+            $this->records->setStatus($id, {{ name }}Status::Published);
+        }
+
+        return $this->back("{{ route }}.edit", ['id' => $id], 'Published.');
+    }
+
+    public function archive(string $id): ResponseInterface
+    {
+        $record = $this->records->find($id) ?? throw new NotFoundHttpException();
+        if ($record['status']->canArchive()) {
+            $this->records->setStatus($id, {{ name }}Status::Archived);
+        }
+
+        return $this->back("{{ route }}.edit", ['id' => $id], 'Archived.');
+    }
+
+    public function confirmDelete(string $id): View
+    {
+        $record = $this->records->find($id) ?? throw new NotFoundHttpException();
+
+        return View::make('@{{ module }}/admin/{{ path }}/confirm-delete', ['id' => $id, 'title' => $record['translations'][self::LOCALES[0]]['title'] ?? $id]);
+    }
+
+    public function delete(string $id): ResponseInterface
+    {
+        $this->records->find($id) ?? throw new NotFoundHttpException();
+        $this->records->delete($id);
+
+        return $this->back('{{ route }}.index', [], 'Deleted.');
+    }
+
+    /**
+     * @param array{id: string, status: {{ name }}Status, translations: array<string, array{title: string, slug: string, body: string}>}|null $record
+     * @param array<string, array{title: string, slug: string, body: string}> $translations
+     * @param array<string, string> $errors
+     */
+    private function form(?array $record, array $translations, array $errors): View
+    {
+        return View::make('@{{ module }}/admin/{{ path }}/form', [
+            'id' => $record['id'] ?? null,
+            'status' => $record === null ? null : $record['status']->value,
+            'locales' => self::LOCALES,
+            'values' => $translations,
+            'errors' => $errors,
+            'flash' => $this->session->getFlash('status'),
+            'preview' => null,
+        ]);
+    }
+
+    /**
+     * @return array{array<string, array{title: string, slug: string, body: string}>, array<string, string>}
+     */
+    private static function read(ServerRequestInterface $request): array
+    {
+        $input = FormInput::from($request);
+        $translations = [];
+        $errors = [];
+        foreach (self::LOCALES as $index => $locale) {
+            $title = $input->string("title_{$locale}");
+            $slug = $input->string("slug_{$locale}") ?: trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower((string) iconv('UTF-8', 'ASCII//TRANSLIT', $title))), '-');
+            $translations[$locale] = ['title' => $title, 'slug' => $slug, 'body' => $input->string("body_{$locale}")];
+            if ($index === 0 && $title === '') {
+                $errors["title_{$locale}"] = 'A title is required.';
+            }
+        }
+
+        return [$translations, $errors];
+    }
+
+    /**
+     * @param array<string, string> $parameters
+     */
+    private function back(string $route, array $parameters, string $message): ResponseInterface
+    {
+        $this->session->flash('status', $message);
+
+        return $this->responses->redirect($this->urls->generate($route, $parameters), 303);
+    }
+}
+

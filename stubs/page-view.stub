@@ -1,0 +1,2 @@
+<?php $this->layout('layouts/site', ['title' => $this->t('{{ key }}.title')]) ?>
+<h1><?= $this->t('{{ key }}.title') ?></h1>

@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+use Zana\Database\Migration\Migration;
+use Zana\Database\Schema\Blueprint;
+use Zana\Database\Schema\Schema;
+
+return new class () extends Migration {
+    public function up(Schema $schema): void
+    {
+        $schema->create('{{ table }}', static function (Blueprint $t): void {
+            $t->uuid('id')->primary();
+            $t->string('status', 16)->default('draft');
+            $t->dateTime('created_at');
+            $t->dateTime('updated_at');
+            $t->dateTime('published_at')->nullable();
+            $t->index('status');
+        });
+
+        // One row per locale: the text, and the slug used in localised URLs.
+        $schema->create('{{ table }}_translations', static function (Blueprint $t): void {
+            $t->uuid('{{ foreign }}_id');
+            $t->string('locale', 16);
+            $t->string('title', 200);
+            $t->string('slug', 200);
+            $t->text('body');
+            $t->unique(['{{ foreign }}_id', 'locale']);
+            $t->unique(['locale', 'slug']);
+            $t->foreign('{{ foreign }}_id')->references('id')->on('{{ table }}')->onDelete('cascade');
+        });
+    }
+
+    public function down(Schema $schema): void
+    {
+        $schema->drop('{{ table }}_translations');
+        $schema->drop('{{ table }}');
+    }
+};

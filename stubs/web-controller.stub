@@ -1,0 +1,18 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Routing\Attribute\Route;
+use Zana\View\View;
+
+#[Route('/{{ path }}')]
+final class {{ name }}Controller
+{
+    #[Route('', methods: ['GET'], name: '{{ route }}.index')]
+    public function index(): View
+    {
+        return View::make('@{{ module }}/{{ path }}/index', ['title' => '{{ name }}']);
+    }
+}

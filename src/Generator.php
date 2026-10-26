@@ -33,14 +33,19 @@ final class Generator
      *
      * @return list<GeneratedFile>
      */
-    public function planModule(string $name): array
+    public function planModule(string $name, bool $web = false): array
     {
         self::validate($name, 'module');
         $this->manualSteps = [];
         $class = "Modules\\{$name}\\{$name}Module";
 
         $files = [$this->file("modules/{$name}/{$name}Module.php", 'module', ['name' => $name, 'module' => $name, 'namespace' => "Modules\\{$name}"])];
-        foreach (['Contracts', 'Domain', 'Application', 'Infrastructure', 'Presentation', 'Tests'] as $folder) {
+        $folders = ['Contracts', 'Domain', 'Application', 'Infrastructure', 'Presentation', 'Tests'];
+        if ($web) {
+            // Templates and translations, loaded automatically by the view and translation packages.
+            $folders = [...array_diff($folders, ['Presentation']), 'Presentation/Web', 'Resources/views', 'Resources/translations'];
+        }
+        foreach ($folders as $folder) {
             $files[] = new GeneratedFile($this->path("modules/{$name}/{$folder}/.gitkeep"), "modules/{$name}/{$folder}/.gitkeep", '');
         }
 
@@ -104,21 +109,111 @@ final class Generator
      *
      * @return list<GeneratedFile>
      */
-    public function planController(string $module, string $name): array
+    public function planController(string $module, string $name, bool $web = false): array
     {
         $this->requireModule($module);
         self::validate($name, 'controller');
-        $slug = strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $name));
+        $slug = self::kebab($name);
+        $layer = $web ? 'Web' : 'Api';
 
-        $controller = "\\Modules\\{$module}\\Presentation\\Api\\{$name}Controller::class";
-
-        return $this->withWiring($module, [$this->file("modules/{$module}/Presentation/Api/{$name}Controller.php", 'controller', [
+        $controller = "\\Modules\\{$module}\\Presentation\\{$layer}\\{$name}Controller::class";
+        $values = [
             'module' => $module,
             'name' => $name,
-            'namespace' => "Modules\\{$module}\\Presentation\\Api",
+            'namespace' => "Modules\\{$module}\\Presentation\\{$layer}",
             'path' => $slug,
             'route' => strtolower($module) . ".{$slug}",
-        ])], ["\$services->transient({$controller});"], ["\$container->get(\\Zana\\Routing\\Router::class)->loadAttributes({$controller});"]);
+        ];
+
+        $files = [$this->file("modules/{$module}/Presentation/{$layer}/{$name}Controller.php", $web ? 'web-controller' : 'controller', $values)];
+        if ($web) {
+            $files[] = $this->file("modules/{$module}/Resources/views/{$slug}/index.php", 'web-view', $values);
+        }
+
+        return $this->withWiring($module, $files, ["\$services->transient({$controller});"], ["\$container->get(\\Zana\\Routing\\Router::class)->loadAttributes({$controller});"]);
+    }
+
+    /**
+     * A localised page: an invokable class with its routes, SEO metadata, and
+     * a template using translation keys.
+     *
+     * @param array<string, string> $paths locale => path, e.g. ['en' => '/about', 'fr' => '/a-propos']
+     * @return list<GeneratedFile>
+     */
+    public function planPage(string $module, string $name, array $paths): array
+    {
+        $this->requireModule($module);
+        self::validate($name, 'page');
+        if ($paths === []) {
+            throw new MakerException('A page needs at least one locale and path.');
+        }
+        $slug = self::kebab($name);
+        $page = "\\Modules\\{$module}\\Presentation\\Web\\{$name}Page::class";
+        $values = [
+            'module' => $module,
+            'name' => $name,
+            'namespace' => "Modules\\{$module}\\Presentation\\Web",
+            'path' => $slug,
+            'route' => $slug,
+            'key' => 'page.' . str_replace('-', '_', $slug),
+            'paths' => self::shortArray($paths),
+        ];
+
+        return $this->withWiring($module, [
+            $this->file("modules/{$module}/Presentation/Web/{$name}Page.php", 'page', $values),
+            $this->file("modules/{$module}/Resources/views/pages/{$slug}.php", 'page-view', $values),
+        ], ["\$services->transient({$page});"], ["{$page}::routes(\$container->get(\\Zana\\Routing\\Router::class));"]);
+    }
+
+    /**
+     * Back-office screens for a content type (FE-32): a status enum (draft,
+     * published, archived), a migration with a translations table, a
+     * repository, an admin controller with publish, archive, delete with
+     * confirmation and signed previews, and its templates.
+     *
+     * @param list<string> $locales The locales editors write in; the first is required
+     * @return list<GeneratedFile>
+     */
+    public function planCrud(string $module, string $name, array $locales): array
+    {
+        $this->requireModule($module);
+        self::validate($name, 'entity');
+        if ($locales === []) {
+            throw new MakerException('make:crud needs at least one locale.');
+        }
+
+        $slug = self::kebab($name) . 's';
+        $foreign = str_replace('-', '_', self::kebab($name));
+        $values = [
+            'module' => $module,
+            'name' => $name,
+            'title' => $name . 's',
+            'path' => $slug,
+            'route' => 'admin.' . $slug,
+            'table' => "{$foreign}s",
+            'foreign' => $foreign,
+            'permission' => "{$slug}.edit",
+            'locales' => self::shortArray($locales),
+        ];
+        $controller = "\\Modules\\{$module}\\Presentation\\Web\\Admin\\{$name}AdminController";
+        $views = "modules/{$module}/Resources/views/admin";
+
+        return $this->withWiring($module, [
+            $this->file("modules/{$module}/Domain/{$name}Status.php", 'crud-status', [...$values, 'namespace' => "Modules\\{$module}\\Domain"]),
+            $this->file("modules/{$module}/Infrastructure/Persistence/Migrations/" . gmdate('Y_m_d_His') . "_create_{$values['table']}_table.php", 'crud-migration', $values),
+            $this->file("modules/{$module}/Infrastructure/{$name}Repository.php", 'crud-repository', [...$values, 'namespace' => "Modules\\{$module}\\Infrastructure"]),
+            $this->file("modules/{$module}/Presentation/Web/Admin/{$name}AdminController.php", 'crud-controller', [...$values, 'namespace' => "Modules\\{$module}\\Presentation\\Web\\Admin"]),
+            $this->file("modules/{$module}/Presentation/Web/Admin/{$name}Preview.php", 'crud-preview-controller', [...$values, 'namespace' => "Modules\\{$module}\\Presentation\\Web\\Admin"]),
+            $this->file("{$views}/{$slug}/index.php", 'crud-index', $values),
+            $this->file("{$views}/{$slug}/form.php", 'crud-form', $values),
+            $this->file("{$views}/{$slug}/confirm-delete.php", 'crud-confirm-delete', $values),
+            $this->file("{$views}/{$slug}/preview.php", 'crud-preview', $values),
+            ...(is_file($this->path("{$views}/layout.php")) ? [] : [$this->file("{$views}/layout.php", 'crud-layout', $values)]),
+        ], [
+            "\$services->scoped(\\Modules\\{$module}\\Infrastructure\\{$name}Repository::class);",
+            "\$services->transient({$controller}::class);",
+            "\$services->transient(\\Modules\\{$module}\\Presentation\\Web\\Admin\\{$name}Preview::class);",
+        ], ["{$controller}::routes(\$container->get(\\Zana\\Routing\\Router::class));"]);
     }
 
     /**
@@ -219,6 +314,24 @@ final class Generator
     public function basePath(): string
     {
         return $this->basePath;
+    }
+
+    private static function kebab(string $name): string
+    {
+        return strtolower((string) preg_replace('/(?<!^)[A-Z]/', '-$0', $name));
+    }
+
+    /**
+     * @param array<array-key, string> $values
+     */
+    private static function shortArray(array $values): string
+    {
+        $items = [];
+        foreach ($values as $key => $value) {
+            $items[] = (array_is_list($values) ? '' : var_export($key, true) . ' => ') . var_export($value, true);
+        }
+
+        return '[' . implode(', ', $items) . ']';
     }
 
     private static function validate(string $name, string $what): void
