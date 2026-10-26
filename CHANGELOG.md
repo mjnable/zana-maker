@@ -3,6 +3,16 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.2.0 — unreleased
+
+### Added
+
+- `make:crud`: back-office screens for a content type, in one or every locale (`--translatable`):
+  list, create, edit, publish, archive, delete after confirming, and a signed preview link
+  (FE-32).
+- `make:page`: a localised page with its routes, metadata and template (FE-16).
+- `--web` on `make:module` and `make:controller`: HTML controllers and templates (FE-16).
+
 ## 2.0.0 — 2026-10-26
 
 The final 2.0 release. No changes since 2.0.0-rc.1.
