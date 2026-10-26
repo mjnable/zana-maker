@@ -23,7 +23,7 @@ final class MakerServiceProvider extends ServiceProvider
 {
     public function register(ServiceCollectionInterface $services): void
     {
-        $services->singleton(Generator::class, static fn (ServiceResolverInterface $r): Generator => new Generator($r->get(ApplicationInterface::class)->basePath()));
+        $services->singleton(Generator::class, static fn (ServiceResolverInterface $r): Generator => new Generator($r->get(ApplicationInterface::class)->basePath()))->uses(ApplicationInterface::class);
 
         foreach ([MakeModuleCommand::class, MakeFeatureCommand::class, MakeEntityCommand::class, MakeControllerCommand::class, MakePageCommand::class, MakeCrudCommand::class] as $command) {
             $services->singleton($command)->tag(ConsoleKernel::TAG, $command);

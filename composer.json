@@ -13,7 +13,7 @@
     "require": {
         "php": "^8.5",
         "mj-zana/console": "^2.0",
-        "mj-zana/core": "^2.0"
+        "mj-zana/core": "^2.4"
     },
     "require-dev": {
         "mj-zana/cache": "^2.2",
@@ -46,7 +46,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/container": "2.3.0"
+                    "mj-zana/container": "2.4.0"
                 }
             }
         },
@@ -56,7 +56,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/configuration": "2.3.0"
+                    "mj-zana/configuration": "2.4.0"
                 }
             }
         },
@@ -66,7 +66,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/core": "2.3.0"
+                    "mj-zana/core": "2.4.0"
                 }
             }
         },
@@ -76,7 +76,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/ddd": "2.3.0"
+                    "mj-zana/ddd": "2.4.0"
                 }
             }
         },
@@ -86,7 +86,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/console": "2.3.0"
+                    "mj-zana/console": "2.4.0"
                 }
             }
         },
@@ -96,7 +96,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/http": "2.3.0"
+                    "mj-zana/http": "2.4.0"
                 }
             }
         },
@@ -106,7 +106,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/mediator": "2.3.0"
+                    "mj-zana/mediator": "2.4.0"
                 }
             }
         },
@@ -116,7 +116,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/routing": "2.3.0"
+                    "mj-zana/routing": "2.4.0"
                 }
             }
         },
@@ -126,7 +126,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/cache": "2.3.0"
+                    "mj-zana/cache": "2.4.0"
                 }
             }
         },
@@ -136,7 +136,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/database": "2.3.0"
+                    "mj-zana/database": "2.4.0"
                 }
             }
         },
@@ -146,7 +146,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/security": "2.3.0"
+                    "mj-zana/security": "2.4.0"
                 }
             }
         },
@@ -156,7 +156,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/session": "2.3.0"
+                    "mj-zana/session": "2.4.0"
                 }
             }
         },
@@ -166,7 +166,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/view": "2.3.0"
+                    "mj-zana/view": "2.4.0"
                 }
             }
         },
@@ -176,7 +176,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/translation": "2.3.0"
+                    "mj-zana/translation": "2.4.0"
                 }
             }
         },
@@ -186,7 +186,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/filesystem": "2.3.0"
+                    "mj-zana/filesystem": "2.4.0"
                 }
             }
         },
@@ -196,7 +196,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/media": "2.3.0"
+                    "mj-zana/media": "2.4.0"
                 }
             }
         },
@@ -206,7 +206,7 @@
             "options": {
                 "symlink": true,
                 "versions": {
-                    "mj-zana/validation": "2.3.0"
+                    "mj-zana/validation": "2.4.0"
                 }
             }
         }
