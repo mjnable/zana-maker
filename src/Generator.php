@@ -217,6 +217,30 @@ final class Generator
     }
 
     /**
+     * The instructions for AI coding agents (FE-44): AGENTS.md, read by most
+     * agents, and one-line pointers for the tools that read their own file
+     * (CLAUDE.md, .github/copilot-instructions.md). The rules are only in
+     * AGENTS.md, which links to the documentation of this Zana version.
+     *
+     * @param string $version The installed Zana minor version, e.g. "2.7"
+     * @return list<GeneratedFile>
+     * @throws MakerException For a version that is not "<major>.<minor>"
+     */
+    public function planAgents(string $version): array
+    {
+        if (preg_match('/^\d+\.\d+$/', $version) !== 1) {
+            throw new MakerException("\"{$version}\" is not a Zana minor version such as 2.7.");
+        }
+        $this->manualSteps = [];
+
+        return [
+            $this->file('AGENTS.md', 'agents', ['version' => $version]),
+            $this->file('CLAUDE.md', 'agents-claude', []),
+            $this->file('.github/copilot-instructions.md', 'agents-copilot', ['version' => $version]),
+        ];
+    }
+
+    /**
      * What the last plan could not wire into the module class (it has no
      * zana:maker markers), as lines for the user to add. Empty when the plan
      * wired everything itself.

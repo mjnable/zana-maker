@@ -1,0 +1,79 @@
+# Instructions for AI coding agents
+
+This is a Zana {{ version }} application (PHP 8.5). Zana is explicit by design: modules, services and
+routes are declared, and mistakes are caught at startup. Follow these rules; do not invent other
+conventions. The documentation for this version is at
+https://github.com/mjnable/zana-docs/tree/{{ version }}, and its index for agents at
+https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
+
+## How to work
+
+1. **Understand the request.** Restate it in one or two sentences before changing code.
+2. **Look at the application:** `php bin/console inspect` (modules, services, routes, commands,
+   configuration keys, packages; add `--format=json` to read it as data, or a section name such as
+   `routes`).
+3. **Reuse what exists.** Search the modules for an existing feature, contract or service first.
+4. **Plan.** Decide which module and layers the change belongs to. `php bin/console make:… --dry-run`
+   shows what a generator would write.
+5. **Generate the structure** with the `make:` commands (`php bin/console list make`) rather than
+   writing boilerplate by hand: they follow the conventions and register what they create.
+6. **Write the business logic** in Domain and Application.
+7. **Verify:** `php bin/console check` (add `--format=json` to read the findings; each has an id, a
+   location and a hint). Fix every error before going on.
+8. **Test:** `composer test`. Add tests for what you changed.
+9. **Summarise** the files changed, the decisions taken, and the commands run with their results.
+
+## Architecture
+
+- **Modules** live in `modules/<Name>/` (namespace `Modules\<Name>`) and are listed in
+  `config/modules.php`. A module declares the modules it uses in `dependsOn()`.
+- **Layers** inside a module, and what each may depend on:
+  - `Domain`: entities, value objects, domain events, repository interfaces. Depends only on itself and
+    `Zana\Ddd`. No framework, database or HTTP code.
+  - `Application`: use cases (commands, queries, handlers). Depends on its Domain, its Contracts and
+    other modules' Contracts.
+  - `Infrastructure`: implementations (repositories on the database, mail, files).
+  - `Presentation`: controllers, console commands, templates. Goes through Application, never Domain
+    or Infrastructure directly.
+  - `Contracts`: what other modules may use. Never depend on another module's internals.
+- `php bin/console check` enforces these rules; do not work around a finding, fix the design.
+
+## Services and configuration
+
+- Register every service in its module's `register()`; nothing is discovered. Controllers and
+  handlers are usually `transient`, repositories `scoped`, stateless services `singleton`.
+- Inject dependencies through constructors. Never fetch services from the container in Domain or
+  Application code.
+- A singleton must not depend on a scoped service. A factory closure declares what it resolves:
+  `->singleton(X::class, fn ($r) => new X($r->get(Y::class)))->uses(Y::class)`.
+- Configuration files (`config/*.php`) return plain values. Secrets and server addresses come from
+  `APP_*` environment variables (`APP_A__B` sets `a.b`), never from `$_ENV` or `getenv()` in
+  configuration files. Read values with the typed methods (`string()`, `int()`, `bool()`).
+
+## Web
+
+- Templates escape by default; never mark user input as safe.
+- Forms that change data use CSRF protection (`csrf_field()` and `CsrfMiddleware`).
+- Catch `MailException` where sending mail can fail, keep what the visitor entered, and log the reason.
+- Answer HTTP errors with the HTTP exceptions (`NotFoundHttpException`, …), not by echoing output.
+
+## Do not
+
+- Do not edit `vendor/`, `var/` or generated caches; run `php bin/console cache:clear` instead.
+- Do not add a dependency on another module's Domain, Application or Infrastructure.
+- Do not swallow exceptions or disable a check to make it pass.
+- Do not commit `.env` or secrets.
+
+## Commands
+
+| Command | Use |
+|---|---|
+| `php bin/console inspect [section] [--format=json]` | See modules, services, routes, configuration keys |
+| `php bin/console check [--format=json]` | Verify wiring, architecture, routes, migrations |
+| `php bin/console make:… [--dry-run]` | Generate modules, features, entities, controllers, pages, back offices |
+| `php bin/console migrate` | Run database migrations |
+| `php bin/console doctor` | Check that a server is ready to run the application |
+| `composer test` | Run the tests |
+
+This file was written by `php bin/console make:agents` for Zana {{ version }}. Run it again after
+upgrading Zana (`--force` replaces it); add project-specific rules in a section of your own below.

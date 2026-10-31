@@ -3,6 +3,18 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.7.0 — 2026-10-31
+
+### Added
+
+- `make:agents [--zana-version] [--force]`: writes `AGENTS.md`, the rules and workflow of a Zana
+  application for AI coding agents, linked to the documentation of the installed Zana version, with
+  `CLAUDE.md` and `.github/copilot-instructions.md` pointing to it (FE-44).
+
+### Changed
+
+- Requires `mj-zana/core` and `mj-zana/console` ^2.7.
+
 ## 2.4.0 — 2026-10-26
 
 ### Changed
