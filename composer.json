@@ -23,8 +23,11 @@
         "mj-zana/mediator": "^2.0",
         "mj-zana/routing": "^2.0",
         "mj-zana/security": "^2.2",
+        "mj-zana/serialization": "^2.7",
         "mj-zana/session": "^2.2",
+        "mj-zana/testing": "^2.7",
         "mj-zana/translation": "^2.2",
+        "mj-zana/validation": "^2.7",
         "mj-zana/view": "^2.2",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^11.5"
@@ -207,6 +210,56 @@
                 "symlink": true,
                 "versions": {
                     "mj-zana/validation": "2.7.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../zana-serialization",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "mj-zana/serialization": "2.7.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../zana-testing",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "mj-zana/testing": "2.7.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../zana-events",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "mj-zana/events": "2.7.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../zana-logging",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "mj-zana/logging": "2.7.0"
+                }
+            }
+        },
+        {
+            "type": "path",
+            "url": "../zana-communication",
+            "options": {
+                "symlink": true,
+                "versions": {
+                    "mj-zana/communication": "2.7.0"
                 }
             }
         }

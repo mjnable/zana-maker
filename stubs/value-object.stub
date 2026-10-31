@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Zana\Ddd\Domain\DomainException;
+use Zana\Ddd\Domain\ValueObject;
+
+/**
+ * {{ label }}: {{ rule }}
+ * Replace this rule with the real one, and update its test.
+ */
+final readonly class {{ name }} extends ValueObject
+{
+    public {{ type }} $value;
+
+    /**
+     * @throws DomainException
+     */
+    public function __construct({{ type }} $value)
+    {
+        {{ check }}
+
+        $this->value = $value;
+    }
+}

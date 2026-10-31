@@ -1,0 +1,22 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use App\Bootstrap;
+use Zana\Core\ApplicationBuilder;
+use Zana\Testing\ApplicationTestCase;
+
+final class {{ name }}ApiTest extends ApplicationTestCase
+{
+    protected function createApplicationBuilder(): ApplicationBuilder
+    {
+        return Bootstrap::builder(dirname(__DIR__, 4))->withEnvironment('testing');
+    }
+
+    public function test{{ name }}(): void
+    {
+        {{ request }}
+    }
+{{ invalid }}}

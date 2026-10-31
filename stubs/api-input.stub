@@ -1,0 +1,71 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Psr\Http\Message\ServerRequestInterface;
+use Zana\Http\Exception\BadRequestHttpException;
+use Zana\Http\Exception\UnprocessableEntityHttpException;
+use Zana\Serialization\DenormalizationException;
+use Zana\Serialization\Serializer;
+use Zana\Validation\Validator;
+
+/**
+ * Reads a validated command or query of the {{ module }} module from a request: the
+ * JSON object in the body (the query string for GET) is denormalized, then
+ * validated. A body that is not a JSON object is a 400; missing, mistyped or
+ * invalid fields are a 422 with "errors": {field: [messages]}.
+ */
+final readonly class ApiInput
+{
+    public function __construct(
+        private Serializer $serializer,
+        private Validator $validator,
+    ) {
+    }
+
+    /**
+     * @template T of object
+     * @param class-string<T> $class
+     * @return T
+     */
+    public function read(ServerRequestInterface $request, string $class): object
+    {
+        $data = $request->getMethod() === 'GET' ? $request->getQueryParams() : self::json($request);
+        try {
+            $message = $this->serializer->denormalize($data, $class);
+        } catch (DenormalizationException $e) {
+            throw new UnprocessableEntityHttpException($e->errors(), previous: $e);
+        }
+
+        $violations = $this->validator->validate($message);
+        if ($violations->hasViolations()) {
+            throw new UnprocessableEntityHttpException($violations->toArray());
+        }
+
+        return $message;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function json(ServerRequestInterface $request): array
+    {
+        $body = trim((string) $request->getBody());
+        if ($body === '') {
+            return [];
+        }
+        try {
+            $data = json_decode($body, true, flags: JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new BadRequestHttpException('The request body must be JSON: ' . $e->getMessage() . '.', previous: $e);
+        }
+        if (!is_array($data) || array_is_list($data) && $data !== []) {
+            throw new BadRequestHttpException('The request body must be a JSON object.');
+        }
+
+        /** @var array<string, mixed> $data */
+        return $data;
+    }
+}

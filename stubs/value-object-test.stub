@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use {{ domainNamespace }}\{{ name }};
+use PHPUnit\Framework\TestCase;
+use Zana\Ddd\Domain\DomainException;
+
+final class {{ name }}Test extends TestCase
+{
+    public function testItIsComparedByValue(): void
+    {
+        $this->assertTrue((new {{ name }}({{ valid }}))->equals(new {{ name }}({{ valid }})));
+        $this->assertFalse((new {{ name }}({{ valid }}))->equals(new {{ name }}({{ other }})));
+    }
+
+    public function testAnInvalidValueIsRefused(): void
+    {
+        $this->expectException(DomainException::class);
+
+        new {{ name }}({{ invalid }});
+    }
+}

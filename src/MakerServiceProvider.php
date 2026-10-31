@@ -16,6 +16,8 @@ use Zana\Maker\Console\MakePageCommand;
 use Zana\Maker\Console\MakeEntityCommand;
 use Zana\Maker\Console\MakeFeatureCommand;
 use Zana\Maker\Console\MakeModuleCommand;
+use Zana\Maker\Console\MakeRepositoryCommand;
+use Zana\Maker\Console\MakeValueObjectCommand;
 
 /**
  * Registers the Generator (for the application's base path) and the make: commands.
@@ -26,7 +28,7 @@ final class MakerServiceProvider extends ServiceProvider
     {
         $services->singleton(Generator::class, static fn (ServiceResolverInterface $r): Generator => new Generator($r->get(ApplicationInterface::class)->basePath()))->uses(ApplicationInterface::class);
 
-        foreach ([MakeModuleCommand::class, MakeFeatureCommand::class, MakeEntityCommand::class, MakeControllerCommand::class, MakePageCommand::class, MakeCrudCommand::class, MakeAgentsCommand::class] as $command) {
+        foreach ([MakeModuleCommand::class, MakeFeatureCommand::class, MakeEntityCommand::class, MakeValueObjectCommand::class, MakeRepositoryCommand::class, MakeControllerCommand::class, MakePageCommand::class, MakeCrudCommand::class, MakeAgentsCommand::class] as $command) {
             $services->singleton($command)->tag(ConsoleKernel::TAG, $command);
         }
     }

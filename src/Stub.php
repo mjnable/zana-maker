@@ -22,7 +22,8 @@ final readonly class Stub
     {
         foreach ([$basePath . "/stubs/{$name}.stub", dirname(__DIR__) . "/stubs/{$name}.stub"] as $file) {
             if (is_file($file)) {
-                return new self($name, (string) file_get_contents($file));
+                // Generated files always have LF line endings, however Git checked the stubs out.
+                return new self($name, str_replace("\r\n", "\n", (string) file_get_contents($file)));
             }
         }
 

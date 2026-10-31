@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace {{ namespace }};
 
-use Zana\Ddd\Application\Query;
+use Zana\Ddd\Application\Query;{{ imports }}
 
 final class {{ message }} extends Query
 {
-    public function __construct()
-    {
+    {{ constructor }}
         parent::__construct();
     }
 }

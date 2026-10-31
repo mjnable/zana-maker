@@ -18,6 +18,17 @@ final class {{ name }} extends AggregateRoot
         return new self({{ name }}Id::generate());
     }
 
+    /**
+     * Rebuild a stored {{ name }} (used by its repository); records no event.
+     */
+    public static function restore({{ name }}Id $id, int $version): self
+    {
+        $entity = new self($id);
+        $entity->version = $version;
+
+        return $entity;
+    }
+
     public function id(): {{ name }}Id
     {
         assert($this->id instanceof {{ name }}Id);

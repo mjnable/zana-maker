@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace {{ namespace }};
 
-use PHPUnit\Framework\TestCase;
 use {{ featureNamespace }}\{{ message }};
 use {{ featureNamespace }}\{{ name }}Handler;
+use PHPUnit\Framework\TestCase;
 
 final class {{ name }}HandlerTest extends TestCase
 {
@@ -14,7 +14,7 @@ final class {{ name }}HandlerTest extends TestCase
     {
         $handler = new {{ name }}Handler();
 
-        $handler(new {{ message }}());
+        $handler(new {{ message }}({{ arguments }}));
 
         $this->markTestIncomplete('Assert what handling {{ message }} should do.');
     }

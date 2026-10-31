@@ -81,6 +81,43 @@ final class CommandsTest extends TestCase
         $this->assertStringContainsString('must be StudlyCase', $output);
     }
 
+    public function testThePlanAsJson(): void
+    {
+        $this->execute(['command' => 'make:module', 'name' => 'Library']);
+
+        $output = new BufferedOutput();
+        $code = $this->kernel->run(new ArrayInput(['command' => 'make:feature', 'module' => 'Library', 'name' => 'AddBook', '--field' => ['title:string', 'pages:?int'], '--http' => true, '--dry-run' => true, '--format' => 'json']), $output);
+        $report = json_decode($output->fetch(), true);
+
+        $this->assertSame(0, $code);
+        $this->assertIsArray($report);
+        $this->assertSame('zana.make/1', $report['schema']);
+        $this->assertSame('ok', $report['status']);
+        $this->assertTrue($report['dry_run']);
+        $this->assertSame([
+            ['action' => 'create', 'path' => 'modules/Library/Application/Features/AddBook/AddBookCommand.php'],
+            ['action' => 'create', 'path' => 'modules/Library/Application/Features/AddBook/AddBookHandler.php'],
+            ['action' => 'create', 'path' => 'modules/Library/Tests/Application/AddBookHandlerTest.php'],
+            ['action' => 'create', 'path' => 'modules/Library/Presentation/Api/ApiInput.php'],
+            ['action' => 'create', 'path' => 'modules/Library/Presentation/Api/AddBookAction.php'],
+            ['action' => 'create', 'path' => 'modules/Library/Tests/Presentation/AddBookApiTest.php'],
+            ['action' => 'update', 'path' => 'modules/Library/LibraryModule.php'],
+        ], $report['files']);
+        $this->assertSame(['register', 'register', 'register', 'boot', 'boot'], array_column($report['wiring'], 'method'));
+        $this->assertSame('$services->transient(\Modules\Library\Presentation\Api\AddBookAction::class);', $report['wiring'][2]['line']);
+        $this->assertNotEmpty($report['manual_steps'], 'this application has no src/Bootstrap.php');
+        $this->assertFileDoesNotExist("{$this->base}/modules/Library/Presentation/Api/AddBookAction.php");
+
+        $output = new BufferedOutput();
+        $code = $this->kernel->run(new ArrayInput(['command' => 'make:repository', 'module' => 'Library', 'entity' => 'Book', '--format' => 'json']), $output);
+        $report = json_decode($output->fetch(), true);
+        $this->assertSame(1, $code);
+        $this->assertIsArray($report);
+        $this->assertSame('error', $report['status']);
+        $this->assertSame([], $report['files']);
+        $this->assertStringContainsString('make:entity Library Book', $report['error']);
+    }
+
     /**
      * @param array<string, mixed> $input
      *

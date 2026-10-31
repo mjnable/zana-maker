@@ -3,6 +3,33 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.8.0 — 2026-10-31
+
+### Added
+
+- Whole use cases (FE-47):
+  - `make:feature … --field=name:type` gives the command or query typed properties (`string`, `int`,
+    `float`, `bool`; `?type` optional); a required string gets `#[NotBlank]`;
+  - `make:feature … --http` adds the vertical slice: an API action routed to
+    `POST /api/<module>/<feature>` (`GET` for a query), the module's `ApiInput` (JSON or query string →
+    a validated command or query; 400 or 422 with the field errors), and an HTTP test;
+  - `make:value-object <Module> <Name> [--type=string|int|float]`: a value object with an example rule,
+    and its test;
+  - `make:repository <Module> <Entity>`: the database implementation of the entity's repository
+    interface, with optimistic versions, its migration and its registration.
+- `--format=json` on every `make:` command: the files, the wiring lines and the manual steps
+  (`zana.make/1`).
+- Manual steps name the providers missing from `src/Bootstrap.php`, and the commands name the packages
+  the generated code needs.
+- `AGENTS.md` describes the new commands and plans with `--dry-run --format=json` (FE-49).
+
+### Changed
+
+- `make:entity` writes `restore(<Entity>Id $id, int $version)`, used by the generated repository.
+- The generated handler tests construct the command or query with example values for its fields.
+- Generated files always have LF line endings, whatever line endings Git gave the stubs.
+- The module stub's marker comments say that every `make:` command adds lines above them.
+
 ## 2.7.0 — 2026-10-31
 
 ### Added

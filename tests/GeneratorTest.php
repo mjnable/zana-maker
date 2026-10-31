@@ -140,6 +140,97 @@ final class GeneratorTest extends TestCase
         }
     }
 
+    public function testFeatureFields(): void
+    {
+        $this->generator->write($this->generator->planModule('Library'));
+
+        $feature = $this->generator->planFeature('Library', 'AddBook', fields: ['pages:?int', 'title', 'price:float', 'signed:bool']);
+        $this->assertStringContainsString("use Zana\\Ddd\\Application\\Command;\nuse Zana\\Validation\\Constraint\\NotBlank;", $feature[0]->contents);
+        $this->assertStringContainsString(
+            "public function __construct(\n        #[NotBlank]\n        public readonly string \$title,\n        public readonly float \$price,\n        public readonly bool \$signed,\n        public readonly ?int \$pages = null,\n    ) {",
+            $feature[0]->contents,
+            'required fields first; required text must not be blank',
+        );
+        $this->assertStringContainsString("new AddBookCommand(title: 'Example', price: 1.5, signed: true)", $feature[2]->contents);
+        $this->generator->write($feature);
+        $this->assertCompiles($feature[0]->relativePath);
+
+        foreach (['Title:string', 'title:text', 'title:', 'title:string:x'] as $invalid) {
+            try {
+                $this->generator->planFeature('Library', 'Other', fields: [$invalid]);
+                $this->fail("The field {$invalid} must be refused.");
+            } catch (MakerException $e) {
+                $this->assertStringContainsString('must be name:type', $e->getMessage());
+            }
+        }
+        $this->expectExceptionMessage('The field "title" is given twice.');
+        $this->generator->planFeature('Library', 'Other', fields: ['title', 'title:int']);
+    }
+
+    public function testMissingProvidersBecomeManualSteps(): void
+    {
+        $this->generator->write($this->generator->planModule('Library'));
+        mkdir("{$this->base}/src");
+        file_put_contents("{$this->base}/src/Bootstrap.php", "<?php // ->withProviders(MediatorServiceProvider::class, SerializationServiceProvider::class)");
+
+        $this->generator->planFeature('Library', 'AddBook', fields: ['title'], http: true);
+        $this->assertSame(['Register ValidationServiceProvider in src/Bootstrap.php: ->withProviders(..., \Zana\Validation\ValidationServiceProvider::class).'], $this->generator->manualSteps());
+
+        $this->generator->write($this->generator->planEntity('Library', 'Book'));
+        $this->generator->planRepository('Library', 'Book');
+        $this->assertStringContainsString('Register DatabaseServiceProvider', $this->generator->manualSteps()[0]);
+    }
+
+    public function testValueObjects(): void
+    {
+        $this->generator->write($this->generator->planModule('Library'));
+
+        $text = $this->generator->planValueObject('Library', 'BookTitle');
+        $this->assertSame(['modules/Library/Domain/BookTitle.php', 'modules/Library/Tests/Domain/BookTitleTest.php'], self::paths($text));
+        $this->assertStringContainsString('final readonly class BookTitle extends ValueObject', $text[0]->contents);
+        $this->assertStringContainsString("throw new DomainException('Book title must not be empty.');", $text[0]->contents);
+        $this->assertStringContainsString("new BookTitle('  ');", $text[1]->contents);
+
+        $count = $this->generator->planValueObject('Library', 'PageCount', 'int');
+        $this->assertStringContainsString('public int $value;', $count[0]->contents);
+        $this->assertStringContainsString('if ($value < 0) {', $count[0]->contents);
+        $this->generator->write([...$text, ...$count]);
+        foreach ([...$text, ...$count] as $file) {
+            $this->assertCompiles($file->relativePath);
+        }
+
+        $this->expectExceptionMessage('The value type "bool" must be string, int or float.');
+        $this->generator->planValueObject('Library', 'Flag', 'bool');
+    }
+
+    public function testRepositories(): void
+    {
+        $this->generator->write($this->generator->planModule('Library'));
+        try {
+            $this->generator->planRepository('Library', 'Book');
+            $this->fail('A repository needs its entity.');
+        } catch (MakerException $e) {
+            $this->assertStringContainsString('create the entity with make:entity Library Book', $e->getMessage());
+        }
+
+        $this->generator->write($this->generator->planEntity('Library', 'Book'));
+        $plan = $this->generator->planRepository('Library', 'Book');
+        $this->assertSame('modules/Library/Infrastructure/Persistence/DatabaseBookRepository.php', $plan[0]->relativePath);
+        $this->assertMatchesRegularExpression('#^modules/Library/Infrastructure/Persistence/Migrations/\d{4}_\d{2}_\d{2}_\d{6}_create_books_table\.php$#', $plan[1]->relativePath);
+        $this->assertSame([['method' => 'register', 'line' => '$services->scoped(\Modules\Library\Domain\BookRepositoryInterface::class, \Modules\Library\Infrastructure\Persistence\DatabaseBookRepository::class);']], $this->generator->wiring());
+        $this->assertSame([], $this->generator->manualSteps());
+        $this->generator->write($plan);
+        foreach ($plan as $file) {
+            $this->assertCompiles($file->relativePath);
+        }
+        $this->assertSame($plan[1]->relativePath, $this->generator->planRepository('Library', 'Book')[1]->relativePath, 'generating again reuses the migration');
+
+        // An entity written before 2.8 has no restore().
+        file_put_contents("{$this->base}/modules/Library/Domain/Book.php", str_replace('function restore(', 'function rebuild(', $this->read('modules/Library/Domain/Book.php')));
+        $this->generator->planRepository('Library', 'Book');
+        $this->assertStringContainsString('Add Book::restore(BookId $id, int $version): self', $this->generator->manualSteps()[0]);
+    }
+
     public function testMakeEntityAndController(): void
     {
         $this->generator->write($this->generator->planModule('Patients'));

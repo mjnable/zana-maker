@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use {{ featureNamespace }}\{{ message }};
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Zana\Http\ResponseFactory;
+use Zana\Mediator\MediatorInterface;
+use Zana\Routing\Attribute\Route;
+
+/**
+ * POST /api/{{ path }} with a JSON object: sends {{ message }}. Answers 204 when it
+ * is handled, 422 with the field errors when the input is invalid.
+ */
+final readonly class {{ name }}Action
+{
+    public function __construct(
+        private ApiInput $input,
+        private MediatorInterface $mediator,
+        private ResponseFactory $responses,
+    ) {
+    }
+
+    #[Route('/api/{{ path }}', methods: ['POST'], name: '{{ route }}')]
+    public function __invoke(ServerRequestInterface $request): ResponseInterface
+    {
+        $this->mediator->send($this->input->read($request, {{ message }}::class));
+
+        return $this->responses->noContent();
+    }
+}

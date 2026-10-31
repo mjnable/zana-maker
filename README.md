@@ -39,6 +39,37 @@ php bin/zana make:entity Patients Patient              # aggregate root, Patient
 php bin/zana make:controller Patients Measurements     # Presentation/Api/MeasurementsController, routed at /api/measurements
 ```
 
+Whole use cases (2.8):
+
+```
+php bin/zana make:feature Library AddBook --field=title:string --field=pages:?int --http
+    # the command with typed, validated fields, its handler, POST /api/library/add-book
+    # (Presentation/Api/AddBookAction), the module's ApiInput, a handler test and an HTTP test
+php bin/zana make:feature Library ListBooks --query --http   # the same for a query, on GET
+php bin/zana make:value-object Library BookTitle [--type=string|int|float]   # a value object with an example rule, and its test
+php bin/zana make:repository Library Book              # DatabaseBookRepository (optimistic versions), its migration, its registration
+```
+
+Field types are `string`, `int`, `float` and `bool`; `?type` makes a field
+optional (null by default), and a required `string` must not be blank. The
+generated tests pass as generated, except the handler tests, which are
+marked incomplete until the handler does something. The HTTP test boots
+`App\Bootstrap::builder()`, the skeletons' convention. When the code needs
+a provider that `src/Bootstrap.php` does not register, or a package that is
+not installed, the command says so.
+
+Every `make:` command takes `--format=json` (with or without `--dry-run`):
+
+```json
+{"schema": "zana.make/1", "status": "ok", "dry_run": true,
+ "files": [{"action": "create", "path": "modules/Library/…"}],
+ "wiring": [{"method": "register", "line": "$services->scoped(…);"}],
+ "manual_steps": []}
+```
+
+On an error, `status` is `error`, `error` holds the message and the exit
+code is 1.
+
 For websites:
 
 ```
@@ -89,13 +120,23 @@ The built-in stubs live in this package's `stubs/` folder. Copy one to
 | Stub | Placeholders |
 |---|---|
 | `module` | `name`, `module`, `namespace` |
-| `command`, `query`, `command-handler`, `query-handler` | `module`, `name`, `namespace`, `message` |
-| `handler-test` | the above, plus `featureNamespace` |
+| `command`, `query`, `command-handler`, `query-handler` | `module`, `name`, `namespace`, `message`; `command` and `query` also `imports` and `constructor` (2.8) |
+| `handler-test` | the above, plus `featureNamespace` and `arguments` (2.8) |
+| `api-input`, `api-command-action`, `api-query-action` | `module`, `name`, `namespace`, `message`, `featureNamespace`, `path`, `route` |
+| `api-test` | the above, plus `request` and `invalid` |
 | `entity`, `entity-id`, `repository` | `module`, `name`, `namespace` |
+| `value-object`, `value-object-test` | `module`, `name`, `namespace`, `label`, `type`, `rule`, `check`; the test also `domainNamespace`, `valid`, `other`, `invalid` |
+| `database-repository`, `repository-migration` | `module`, `name`, `namespace`, `table`, `label` |
 | `controller` | `module`, `name`, `namespace`, `path`, `route` |
 
+A `command` or `query` stub copied before 2.8 still works, without the
+fields. Stubs are read with LF line endings, so generated files are the
+same on every system.
+
 The generated code uses `mj-zana/ddd`, `mj-zana/mediator` and
-`mj-zana/routing`. Install the ones your modules need.
+`mj-zana/routing`; HTTP use cases also `mj-zana/serialization`,
+`mj-zana/validation` and `mj-zana/testing`, and repositories
+`mj-zana/database`. Install the ones your modules need.
 
 ## License
 

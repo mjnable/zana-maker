@@ -1,0 +1,85 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use Modules\{{ module }}\Domain\{{ name }};
+use Modules\{{ module }}\Domain\{{ name }}Id;
+use Modules\{{ module }}\Domain\{{ name }}RepositoryInterface;
+use Zana\Database\ConnectionInterface;
+use Zana\Ddd\Domain\AggregateRoot;
+use Zana\Ddd\Domain\DomainException;
+use Zana\Ddd\Domain\EntityNotFoundException;
+
+/**
+ * Stores {{ name }} aggregates in the {{ table }} table. add() inserts a new one and
+ * updates a stored one, refusing a change made to an outdated copy. To store
+ * a property: add its column to the migration, then to row() and hydrate().
+ */
+final readonly class Database{{ name }}Repository implements {{ name }}RepositoryInterface
+{
+    private const string TABLE = '{{ table }}';
+
+    public function __construct(private ConnectionInterface $db)
+    {
+    }
+
+    public function find(mixed $id): ?{{ name }}
+    {
+        $row = $this->db->table(self::TABLE)->where('id', (string) $id)->first();
+
+        return $row === null ? null : self::hydrate($row);
+    }
+
+    public function get(mixed $id): {{ name }}
+    {
+        return $this->find($id) ?? throw new EntityNotFoundException(sprintf('There is no {{ label }} %s.', (string) $id));
+    }
+
+    public function add(AggregateRoot $aggregate): void
+    {
+        $entity = self::entity($aggregate);
+        $version = $entity->getVersion();
+        $row = [...self::row($entity), 'version' => $version + 1];
+
+        if ($version === 0) {
+            $this->db->table(self::TABLE)->insert(['id' => (string) $entity->id(), ...$row]);
+        } elseif ($this->db->table(self::TABLE)->where('id', (string) $entity->id())->where('version', $version)->update($row) !== 1) {
+            throw new DomainException(sprintf('The {{ label }} %s was changed in the meantime; load it again.', (string) $entity->id()));
+        }
+        $entity->incrementVersion();
+    }
+
+    public function remove(AggregateRoot $aggregate): void
+    {
+        $this->db->table(self::TABLE)->where('id', (string) self::entity($aggregate)->id())->delete();
+    }
+
+    /**
+     * The stored columns, besides id and version.
+     *
+     * @return array<string, mixed>
+     */
+    private static function row({{ name }} $entity): array
+    {
+        return [];
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private static function hydrate(array $row): {{ name }}
+    {
+        $text = static fn (string $key): string => is_scalar($row[$key] ?? null) ? (string) $row[$key] : '';
+
+        return {{ name }}::restore({{ name }}Id::fromString($text('id')), (int) $text('version'));
+    }
+
+    private static function entity(AggregateRoot $aggregate): {{ name }}
+    {
+        return $aggregate instanceof {{ name }}
+            ? $aggregate
+            : throw new \InvalidArgumentException('Expected a ' . {{ name }}::class . ', got ' . $aggregate::class . '.');
+    }
+}
