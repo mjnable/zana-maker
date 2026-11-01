@@ -353,10 +353,11 @@ final class Generator
      * AGENTS.md, which links to the documentation of this Zana version.
      *
      * @param string $version The installed Zana minor version, e.g. "2.7"
+     * @param string $console The application's console script, named in the commands (FE-54)
      * @return list<GeneratedFile>
      * @throws MakerException For a version that is not "<major>.<minor>"
      */
-    public function planAgents(string $version): array
+    public function planAgents(string $version, string $console = 'bin/console'): array
     {
         if (preg_match('/^\d+\.\d+$/', $version) !== 1) {
             throw new MakerException("\"{$version}\" is not a Zana minor version such as 2.7.");
@@ -364,7 +365,7 @@ final class Generator
         $this->reset();
 
         return [
-            $this->file('AGENTS.md', 'agents', ['version' => $version]),
+            $this->file('AGENTS.md', 'agents', ['version' => $version, 'console' => "php {$console}"]),
             $this->file('CLAUDE.md', 'agents-claude', []),
             $this->file('.github/copilot-instructions.md', 'agents-copilot', ['version' => $version]),
         ];

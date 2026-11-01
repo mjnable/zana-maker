@@ -70,6 +70,32 @@ Every `make:` command takes `--format=json` (with or without `--dry-run`):
 On an error, `status` is `error`, `error` holds the message and the exit
 code is 1.
 
+A whole feature from one file (2.11): `make:plan library.json [--dry-run]`.
+
+```json
+{
+    "schema": "zana.plan/1",
+    "module": "Library",
+    "entities": ["Book"],
+    "value_objects": [{"name": "BookTitle", "type": "string"}],
+    "repositories": ["Book"],
+    "features": [
+        {"name": "AddBook", "http": true, "fields": ["title:string", "pages:?int"]},
+        {"name": "ListBooks", "query": true, "http": true}
+    ]
+}
+```
+
+Each entry is one `make:` command (`make:module` when the module does not
+exist yet; `"web": true` as `--web`), run in that order, and the files are
+exactly what those commands write. The plan runs in a temporary copy first:
+nothing is written unless every step succeeds. Its JSON report adds the
+equivalent `commands` and the `steps`. Unknown keys are errors.
+
+`check` warns (`agents.instructions`, 2.11) when `AGENTS.md` is missing or
+names another Zana version than the installed one; `make:agents` writes the
+commands with the console script it was run with, e.g. `php bin/zana`.
+
 For websites:
 
 ```

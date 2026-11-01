@@ -69,6 +69,15 @@ final class AgentsTest extends TestCase
         $this->assertStringContainsString('This is a Zana 2.8 application', (string) file_get_contents("{$this->base}/AGENTS.md"));
     }
 
+    public function testTheCommandsUseTheApplicationsConsoleScript(): void
+    {
+        $agents = (new Generator($this->base))->planAgents('2.11', 'bin/zana')[0]->contents;
+
+        $this->assertStringContainsString('php bin/zana check', $agents);
+        $this->assertStringContainsString('`php bin/zana inspect [section] [--format=json]`', $agents);
+        $this->assertStringNotContainsString('bin/console', $agents, 'FE-54');
+    }
+
     public function testTheVersionIsAMinorVersion(): void
     {
         $this->expectException(MakerException::class);

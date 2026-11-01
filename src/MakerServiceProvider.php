@@ -8,6 +8,7 @@ use Zana\Console\ConsoleKernel;
 use Zana\Container\Contracts\ServiceCollectionInterface;
 use Zana\Container\Contracts\ServiceResolverInterface;
 use Zana\Core\ApplicationInterface;
+use Zana\Core\Inspection\ApplicationCheck;
 use Zana\Core\ServiceProvider;
 use Zana\Maker\Console\MakeAgentsCommand;
 use Zana\Maker\Console\MakeControllerCommand;
@@ -16,8 +17,10 @@ use Zana\Maker\Console\MakePageCommand;
 use Zana\Maker\Console\MakeEntityCommand;
 use Zana\Maker\Console\MakeFeatureCommand;
 use Zana\Maker\Console\MakeModuleCommand;
+use Zana\Maker\Console\MakePlanCommand;
 use Zana\Maker\Console\MakeRepositoryCommand;
 use Zana\Maker\Console\MakeValueObjectCommand;
+use Zana\Maker\Inspection\AgentsCheck;
 
 /**
  * Registers the Generator (for the application's base path) and the make: commands.
@@ -28,9 +31,10 @@ final class MakerServiceProvider extends ServiceProvider
     {
         $services->singleton(Generator::class, static fn (ServiceResolverInterface $r): Generator => new Generator($r->get(ApplicationInterface::class)->basePath()))->uses(ApplicationInterface::class);
 
-        foreach ([MakeModuleCommand::class, MakeFeatureCommand::class, MakeEntityCommand::class, MakeValueObjectCommand::class, MakeRepositoryCommand::class, MakeControllerCommand::class, MakePageCommand::class, MakeCrudCommand::class, MakeAgentsCommand::class] as $command) {
+        foreach ([MakeModuleCommand::class, MakeFeatureCommand::class, MakeEntityCommand::class, MakeValueObjectCommand::class, MakeRepositoryCommand::class, MakeControllerCommand::class, MakePageCommand::class, MakeCrudCommand::class, MakeAgentsCommand::class, MakePlanCommand::class] as $command) {
             $services->singleton($command)->tag(ConsoleKernel::TAG, $command);
         }
+        $services->singleton(AgentsCheck::class)->tag(ApplicationCheck::TAG, AgentsCheck::class);
     }
 
     public function origin(): string

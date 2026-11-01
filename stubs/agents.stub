@@ -9,14 +9,17 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
 ## How to work
 
 1. **Understand the request.** Restate it in one or two sentences before changing code.
-2. **Look at the application:** `php bin/console inspect` (modules, services, routes, commands,
+2. **Look at the application:** `{{ console }} inspect` (modules, services, routes, commands,
    configuration keys, packages; add `--format=json` to read it as data, or a section name such as
    `routes`).
 3. **Reuse what exists.** Search the modules for an existing feature, contract or service first.
 4. **Plan.** Decide which module and layers the change belongs to.
-   `php bin/console make:… --dry-run --format=json` lists the files a generator would write and the
-   lines it would register.
-5. **Generate the structure** with the `make:` commands (`php bin/console list make`) rather than
+   `{{ console }} make:… --dry-run --format=json` lists the files a generator would write and the
+   lines it would register. For a feature across layers, write a plan file (`"schema":
+   "zana.plan/1"`: the module, its entities, value objects, repositories and features) and show it
+   for review with `{{ console }} make:plan <file> --dry-run`; it runs the same `make:` commands, all
+   or nothing.
+5. **Generate the structure** with the `make:` commands (`{{ console }} list make`) rather than
    writing boilerplate by hand: they follow the conventions and register what they create. A use
    case exposed over HTTP is one command:
    `make:feature <Module> <Feature> --field=name:string --field=count:?int --http` (a command or,
@@ -25,7 +28,7 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
    migration).
 6. **Write the business logic** in Domain and Application: the generated handlers are empty and
    their tests are marked incomplete until you do.
-7. **Verify:** `php bin/console check` (add `--format=json` to read the findings; each has an id, a
+7. **Verify:** `{{ console }} check` (add `--format=json` to read the findings; each has an id, a
    location and a hint). Fix every error before going on.
 8. **Test:** `composer test`. Add tests for what you changed.
 9. **Summarise** the files changed, the decisions taken, and the commands run with their results.
@@ -43,7 +46,7 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
   - `Presentation`: controllers, console commands, templates. Goes through Application, never Domain
     or Infrastructure directly.
   - `Contracts`: what other modules may use. Never depend on another module's internals.
-- `php bin/console check` enforces these rules; do not work around a finding, fix the design.
+- `{{ console }} check` enforces these rules; do not work around a finding, fix the design.
 
 ## Services and configuration
 
@@ -66,7 +69,7 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
 
 ## Do not
 
-- Do not edit `vendor/`, `var/` or generated caches; run `php bin/console cache:clear` instead.
+- Do not edit `vendor/`, `var/` or generated caches; run `{{ console }} cache:clear` instead.
 - Do not add a dependency on another module's Domain, Application or Infrastructure.
 - Do not swallow exceptions or disable a check to make it pass.
 - Do not commit `.env` or secrets.
@@ -75,12 +78,13 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
 
 | Command | Use |
 |---|---|
-| `php bin/console inspect [section] [--format=json]` | See modules, services, routes, configuration keys |
-| `php bin/console check [--format=json]` | Verify wiring, architecture, routes, migrations |
-| `php bin/console make:… [--dry-run] [--format=json]` | Generate modules, features and HTTP use cases, entities, value objects, repositories, controllers, pages, back offices |
-| `php bin/console migrate` | Run database migrations |
-| `php bin/console doctor` | Check that a server is ready to run the application |
+| `{{ console }} inspect [section] [--format=json]` | See modules, services, routes, configuration keys |
+| `{{ console }} check [--format=json]` | Verify wiring, architecture, routes, migrations |
+| `{{ console }} make:… [--dry-run] [--format=json]` | Generate modules, features and HTTP use cases, entities, value objects, repositories, controllers, pages, back offices |
+| `{{ console }} make:plan <file> [--dry-run]` | Generate a whole feature from a plan file, all or nothing |
+| `{{ console }} migrate` | Run database migrations |
+| `{{ console }} doctor` | Check that a server is ready to run the application |
 | `composer test` | Run the tests |
 
-This file was written by `php bin/console make:agents` for Zana {{ version }}. Run it again after
+This file was written by `{{ console }} make:agents` for Zana {{ version }}. Run it again after
 upgrading Zana (`--force` replaces it); add project-specific rules in a section of your own below.

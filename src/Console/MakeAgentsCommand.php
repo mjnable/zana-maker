@@ -9,6 +9,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Zana\Core\ConsoleScript;
 use Zana\Maker\Generator;
 use Zana\Maker\MakerException;
 
@@ -19,6 +20,8 @@ use Zana\Maker\MakerException;
  * and .github/copilot-instructions.md pointing to it (FE-44). The version
  * defaults to the installed mj-zana/core's, so the links lead to the
  * matching documentation. Run it again with --force after upgrading Zana.
+ * The commands it lists use the script it was run with, e.g. bin/zana
+ * (FE-54); bin/console when that is unknown.
  */
 #[AsCommand(name: 'make:agents', description: 'Write AGENTS.md, the instructions for AI coding agents, for this Zana version')]
 final class MakeAgentsCommand extends MakerCommand
@@ -34,7 +37,9 @@ final class MakeAgentsCommand extends MakerCommand
         $given = $input->getOption('zana-version');
         $version = is_string($given) ? $given : self::installedVersion();
 
-        return $this->generate($generator, static fn (): array => $generator->planAgents($version), $input, $io);
+        $console = ConsoleScript::current() ?? 'bin/console';
+
+        return $this->generate($generator, static fn (): array => $generator->planAgents($version, $console), $input, $io);
     }
 
     /**
