@@ -77,7 +77,12 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
 
 ## Web
 
-- Templates escape by default; never mark user input as safe.
+- Templates escape the strings and arrays given to them, not objects: print an entity's or a DTO's
+  values with `<?= $this->e($post->title) ?>`, never `<?= $post->title ?>`. Never mark user input as safe.
+- Escaping does not make a URL safe: print a URL that users gave in `href` or `src` only after checking
+  that it starts with `https://`, `http://` or `/`, so that a `javascript:` link cannot run.
+- Store uploads with `UploadedFileStore` and `allowedMimeTypes`; it gives them random names and drops
+  extensions a browser would run, such as `.html` and `.svg`.
 - Forms that change data use CSRF protection (`csrf_field()` and `CsrfMiddleware`).
 - Catch `MailException` where sending mail can fail, keep what the visitor entered, and log the reason.
 - Answer HTTP errors with the HTTP exceptions (`NotFoundHttpException`, …), not by echoing output.
