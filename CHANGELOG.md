@@ -3,6 +3,13 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.19.0 — Unreleased
+
+### Changed
+
+- `make:agents`: `AGENTS.md` asks agents for a security check on risky changes, and to report it in their
+  summary (FE-67).
+
 ## 2.11.0 — 2026-11-01
 
 ### Added

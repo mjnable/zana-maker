@@ -45,6 +45,10 @@ final class AgentsTest extends TestCase
             $this->assertStringContainsString($rule, $agents);
         }
         $this->assertStringNotContainsString('{{', $agents);
+        foreach (['**Security check,**', 'Attack it:', 'php bin/console inspect routes', 'composer audit', 'Reasoning that the code looks safe is not a check.', 'what you did not cover', 'Never call the result secure.'] as $step) {
+            $this->assertStringContainsString($step, $agents, 'FE-67');
+        }
+        $this->assertLessThan(strpos($agents, '10. **Summarise**'), strpos($agents, '9. **Security check,**'), 'the check comes before the summary, which reports it');
 
         $this->assertSame("@AGENTS.md\n", $files[1]->contents, 'Claude Code imports AGENTS.md');
         $this->assertStringContainsString('Follow the instructions in AGENTS.md', $files[2]->contents);

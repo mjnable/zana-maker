@@ -31,7 +31,22 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
 7. **Verify:** `{{ console }} check` (add `--format=json` to read the findings; each has an id, a
    location and a hint). Fix every error before going on.
 8. **Test:** `composer test`. Add tests for what you changed.
-9. **Summarise** the files changed, the decisions taken, and the commands run with their results.
+9. **Security check,** when the change reads outside input (requests, uploads, files, webhooks,
+   imported data), deletes or writes files, starts a process, touches sign-in, permissions, secrets
+   or payments, builds SQL or HTML, or changes a dependency:
+   - Name who can reach the code, confirmed with `{{ console }} inspect routes` rather than assumed,
+     and the worst outcome.
+   - Attack it: write tests with hostile input, such as another user's id, a missing or forged token,
+     `../` in a file name, markup in a text field, or an oversized or repeated request. Run them, and
+     look at what happened in the database or on disk, not only at the response.
+   - Fix the cause: accept what is known to be safe rather than refuse what is known to be bad, and
+     add a second check where the harm is serious.
+   - Keep every attack as a test, and run `composer audit` when a dependency changed.
+
+   Reasoning that the code looks safe is not a check.
+10. **Summarise** the files changed, the decisions taken, and the commands run with their results.
+    Report the security check: what you attacked, what you found, and what you did not cover. If you
+    skipped it, say why. Never call the result secure.
 
 ## Architecture
 
