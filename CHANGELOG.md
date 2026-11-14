@@ -3,6 +3,13 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.24.0 — Unreleased
+
+### Changed
+
+- `AGENTS.md`: a public form that sends a message to people gets a rate limit and spam rules (`#[SpamRules]`, FE-63),
+  and answers a validation error with 422.
+
 ## 2.23.0 — 2026-11-14
 
 ### Changed

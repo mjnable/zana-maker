@@ -89,6 +89,10 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
   new or whose access changed. After adding a route or changing its access, run `{{ console }} security:exposure`,
   which shows the changes and writes nothing, and name every change in your summary. Never run `--update` or
   `--init` yourself, and never edit the file: recording a change approves it, and that is a person's decision.
+- A public form that sends a message to people (contact, comments, sign-up) gets `#[RateLimit]` and
+  `#[SpamRules('form')]` on its handler, with `RateLimitMiddleware` and `SpamGuardMiddleware` on the route, and its
+  rules in `security.spam.forms`. Answer a validation error with 422, not a redirect, so a corrected form is not
+  taken for the same message sent again.
 - Templates escape the strings and arrays given to them, not objects: print an entity's or a DTO's
   values with `<?= $this->e($post->title) ?>`, never `<?= $post->title ?>`. Never mark user input as safe.
 - Escaping does not make a URL safe: print a URL that users gave in `href` or `src` with
