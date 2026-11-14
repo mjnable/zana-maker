@@ -7,8 +7,9 @@ not change this package is not listed.
 
 ### Changed
 
-- `AGENTS.md`: after adding a route or changing its access, run `security:exposure` and name every change it lists
-  in the summary, so a person reviews it; never run it only to silence `check` (FE-68 layer 4).
+- `AGENTS.md`: after adding a route or changing its access, an agent runs `security:exposure`, which shows the
+  changes and writes nothing, and names every change in its summary. It never runs `--update` or `--init` and never
+  edits `security/exposure.json`: recording a change approves it, which is a person's decision (FE-68 layer 4).
 
 ## 2.22.0 — 2026-11-14
 
