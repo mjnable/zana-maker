@@ -3,6 +3,14 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.20.0 — Unreleased
+
+### Changed
+
+- `AGENTS.md` tells agents to print users' URLs with `safe_url()`, to pass `FormInput::only()` to `insert()`
+  and `update()`, and to send a sort, a field list or a search from the request through `orderByAllowed()`,
+  `selectAllowed()` or `whereLike()`.
+
 ## 2.19.2 — 2026-11-07
 
 ### Security
