@@ -93,6 +93,10 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
   `#[SpamRules('form')]` on its handler, with `RateLimitMiddleware` and `SpamGuardMiddleware` on the route, and its
   rules in `security.spam.forms`. Answer a validation error with 422, not a redirect, so a corrected form is not
   taken for the same message sent again.
+- A form that bots attack despite those, or a purchase they race for (tickets as sales open), also gets
+  `#[VerifyHuman]` with `BotVerificationMiddleware` on the route, a provider from mj-zana/captcha, and
+  `<?= $this->captcha_widget('action', $csp_nonce) ?>` in the form. Run `{{ console }} check`: it says what the
+  Content-Security-Policy must allow. In tests, register `FakeBotVerifier`; never call a provider.
 - Templates escape the strings and arrays given to them, not objects: print an entity's or a DTO's
   values with `<?= $this->e($post->title) ?>`, never `<?= $post->title ?>`. Never mark user input as safe.
 - Escaping does not make a URL safe: print a URL that users gave in `href` or `src` with

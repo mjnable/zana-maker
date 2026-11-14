@@ -3,6 +3,13 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.25.0 — Unreleased
+
+### Changed
+
+- `AGENTS.md`: a form under attack by bots, or a purchase bots race for, gets `#[VerifyHuman]` with
+  `BotVerificationMiddleware` and mj-zana/captcha (FE-64).
+
 ## 2.24.0 — 2026-11-14
 
 ### Changed
