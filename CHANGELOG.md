@@ -16,7 +16,8 @@ not change this package is not listed.
   - the HTTP test of a protected action proves an anonymous request gets 401, and leaves the signed-in request,
     which depends on the application, as an incomplete test with the request in a comment;
   - the CRUD preview controller is public: the signed token in its link is the access.
-- `AGENTS.md`: every route says who may reach it, and `#[PublicRoute]` is never added only to silence `check`.
+- `AGENTS.md`: every route says who may reach it, `#[PublicRoute]` is never added only to silence `check`, and an
+  application's own sign-in middleware is declared in `security.access_middleware`.
 
 ## 2.20.0 — 2026-11-14
 
