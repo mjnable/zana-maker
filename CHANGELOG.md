@@ -3,6 +3,12 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.25.1 — Unreleased
+
+### Changed
+
+- `AGENTS.md`: the PSR-18 client for CAPTCHA providers is bounded and never retries; a token is never logged.
+
 ## 2.25.0 — 2026-11-14
 
 ### Changed
