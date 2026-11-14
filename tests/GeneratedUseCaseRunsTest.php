@@ -66,7 +66,8 @@ final class GeneratedUseCaseRunsTest extends TestCase
         $report = json_decode($check->output(), true);
         $this->assertIsArray($report, $check->output());
         // 2.21, FE-68: both routes say who may reach them. The public AddBook changes data without a rate limit: a warning.
-        $this->assertSame(['security.rate_limit'], array_column($report['findings'], 'id'), $check->output());
+        // 2.23, FE-68 layer 4: the generated application has no security/exposure.json yet, a warning too.
+        $this->assertSame(['security.rate_limit', 'security.exposure'], array_column($report['findings'], 'id'), $check->output());
         $this->assertStringContainsString('POST /api/library/add-book is public', $report['findings'][0]['message']);
         $this->assertSame('warning', $report['status']);
         $this->assertContains('Architecture: 1 module(s), no violation', $report['passed']);
