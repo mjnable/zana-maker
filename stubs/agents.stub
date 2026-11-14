@@ -83,6 +83,8 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
   `#[PublicRoute]` only to silence it: give the real reason, or protect the route. When the application signs
   users in with its own middleware, declare that middleware in `security.access_middleware` with how it refuses
   anonymous visitors; it never stands for a permission check.
+- `tests/SecurityTest.php` attacks every route (`assertRoutesWithstandAttacks()`). When it fails, fix the route;
+  leave one out with `except:` only with the real reason, which the report shows.
 - Templates escape the strings and arrays given to them, not objects: print an entity's or a DTO's
   values with `<?= $this->e($post->title) ?>`, never `<?= $post->title ?>`. Never mark user input as safe.
 - Escaping does not make a URL safe: print a URL that users gave in `href` or `src` with

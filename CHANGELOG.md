@@ -3,6 +3,13 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.22.0 — Unreleased
+
+### Changed
+
+- `AGENTS.md`: `tests/SecurityTest.php` attacks every route; a failure is fixed in the route, and a route is left out
+  only with the real reason (FE-68).
+
 ## 2.21.0 — 2026-11-14
 
 ### Changed
