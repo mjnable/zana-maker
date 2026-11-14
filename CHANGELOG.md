@@ -3,6 +3,13 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.23.0 — Unreleased
+
+### Changed
+
+- `AGENTS.md`: after adding a route or changing its access, run `security:exposure` and name every change it lists
+  in the summary, so a person reviews it; never run it only to silence `check` (FE-68 layer 4).
+
 ## 2.22.0 — 2026-11-14
 
 ### Changed
