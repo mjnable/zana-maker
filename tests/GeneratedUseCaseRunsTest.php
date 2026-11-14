@@ -19,6 +19,7 @@ use Zana\Http\HttpServiceProvider;
 use Zana\Maker\Generator;
 use Zana\Mediator\MediatorServiceProvider;
 use Zana\Routing\RoutingServiceProvider;
+use Zana\Security\SecurityServiceProvider;
 use Zana\Serialization\SerializationServiceProvider;
 use Zana\Testing\ConsoleTester;
 use Zana\Testing\HttpTestClient;
@@ -64,8 +65,10 @@ final class GeneratedUseCaseRunsTest extends TestCase
         $check = $console->run('check --format=json');
         $report = json_decode($check->output(), true);
         $this->assertIsArray($report, $check->output());
-        $this->assertSame([], $report['findings'], $check->output());
-        $this->assertSame('ok', $report['status']);
+        // 2.21, FE-68: both routes say who may reach them. The public AddBook changes data without a rate limit: a warning.
+        $this->assertSame(['security.rate_limit'], array_column($report['findings'], 'id'), $check->output());
+        $this->assertStringContainsString('POST /api/library/add-book is public', $report['findings'][0]['message']);
+        $this->assertSame('warning', $report['status']);
         $this->assertContains('Architecture: 1 module(s), no violation', $report['passed']);
         $this->assertSame(0, $check->exitCode());
 
@@ -76,7 +79,7 @@ final class GeneratedUseCaseRunsTest extends TestCase
         $this->assertEqualsCanonicalizing(['pages', 'title'], array_keys($errors), 'a mistyped and a missing field');
         $http->post('/api/library/add-book', ['title' => ''])->assertUnprocessable()->assertJsonPath('errors.title', ['This value should not be blank.']);
         $http->post('/api/library/add-book', '[1, 2]')->assertStatus(400);
-        $http->get('/api/library/list-books?author=Herbert')->assertOk()->assertJsonPath('data', []);
+        $http->get('/api/library/list-books?author=Herbert')->assertUnauthorized();   // protected by default (2.21)
 
         // The generated repository, on the migrated table.
         $repository = $app->container()->createScope()->get('Modules\Library\Domain\BookRepositoryInterface');
@@ -113,7 +116,7 @@ final class GeneratedUseCaseRunsTest extends TestCase
 
         $output = implode("\n", $output);
         $this->assertSame(0, $code, $output);
-        $this->assertMatchesRegularExpression('/Tests: 7, Assertions: \d+, Incomplete: 2\./', $output, 'the API, value object and handler tests run; the handler tests wait for their logic');
+        $this->assertMatchesRegularExpression('/Tests: 8, Assertions: \d+, Incomplete: 3\./', $output, 'the API, value object and handler tests run; the handler tests wait for their logic, and the protected API test for a signed-in user');
     }
 
     public function testTheSameInputGeneratesTheSameCode(): void
@@ -139,7 +142,7 @@ final class GeneratedUseCaseRunsTest extends TestCase
         $generator->write($generator->planValueObject('Library', 'BookTitle'));
         $generator->write($generator->planEntity('Library', 'Book'));
         $generator->write($generator->planRepository('Library', 'Book'));
-        $generator->write($generator->planFeature('Library', 'AddBook', fields: ['title:string', 'pages:?int'], http: true));
+        $generator->write($generator->planFeature('Library', 'AddBook', fields: ['title:string', 'pages:?int'], http: true, public: 'Anyone may suggest a book'));
         $generator->write($generator->planFeature('Library', 'ListBooks', query: true, fields: ['author:?string'], http: true));
         if (!is_dir("{$base}/src")) {
             mkdir("{$base}/src");
@@ -158,6 +161,7 @@ final class GeneratedUseCaseRunsTest extends TestCase
             use Zana\Http\HttpServiceProvider;
             use Zana\Mediator\MediatorServiceProvider;
             use Zana\Routing\RoutingServiceProvider;
+            use Zana\Security\SecurityServiceProvider;
             use Zana\Serialization\SerializationServiceProvider;
             use Zana\Validation\ValidationServiceProvider;
 
@@ -166,8 +170,8 @@ final class GeneratedUseCaseRunsTest extends TestCase
                 public static function builder(string $basePath): ApplicationBuilder
                 {
                     return Application::configure($basePath)
-                        ->withProviders(HttpServiceProvider::class, RoutingServiceProvider::class, MediatorServiceProvider::class, SerializationServiceProvider::class, ValidationServiceProvider::class, DatabaseServiceProvider::class, ConsoleServiceProvider::class)
-                        ->withConfiguration(['database.connections.main' => ['driver' => 'sqlite', 'database' => ':memory:']]);
+                        ->withProviders(HttpServiceProvider::class, RoutingServiceProvider::class, MediatorServiceProvider::class, SerializationServiceProvider::class, ValidationServiceProvider::class, DatabaseServiceProvider::class, ConsoleServiceProvider::class, SecurityServiceProvider::class)
+                        ->withConfiguration(['database.connections.main' => ['driver' => 'sqlite', 'database' => ':memory:'], 'security.secret' => str_repeat('s', 40)]);
                 }
             }
             PHP);
@@ -177,8 +181,8 @@ final class GeneratedUseCaseRunsTest extends TestCase
     {
         return Application::configure($base)
             ->withEnvironment('testing')
-            ->withProviders(HttpServiceProvider::class, RoutingServiceProvider::class, MediatorServiceProvider::class, SerializationServiceProvider::class, ValidationServiceProvider::class, DatabaseServiceProvider::class, ConsoleServiceProvider::class)
-            ->withConfiguration(['database.connections.main' => ['driver' => 'sqlite', 'database' => ':memory:']])
+            ->withProviders(HttpServiceProvider::class, RoutingServiceProvider::class, MediatorServiceProvider::class, SerializationServiceProvider::class, ValidationServiceProvider::class, DatabaseServiceProvider::class, ConsoleServiceProvider::class, SecurityServiceProvider::class)
+            ->withConfiguration(['database.connections.main' => ['driver' => 'sqlite', 'database' => ':memory:'], 'security.secret' => str_repeat('s', 40)])
             ->build();
     }
 

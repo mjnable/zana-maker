@@ -77,6 +77,10 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
 
 ## Web
 
+- Every route says who may reach it: `#[RequiresAuthentication]` or `#[RequiresPermission('…')]`, with
+  `AuthorizationMiddleware` on the route or its group, or `#[PublicRoute(reason: '…')]` when anyone may.
+  `check` reports a route that says nothing, and an access rule no middleware enforces. Never add
+  `#[PublicRoute]` only to silence it: give the real reason, or protect the route.
 - Templates escape the strings and arrays given to them, not objects: print an entity's or a DTO's
   values with `<?= $this->e($post->title) ?>`, never `<?= $post->title ?>`. Never mark user input as safe.
 - Escaping does not make a URL safe: print a URL that users gave in `href` or `src` with

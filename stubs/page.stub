@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace {{ namespace }};
 
-use Zana\Routing\Router;
+{{ routingImports }}use Zana\Routing\Router;
 use Zana\Routing\UrlGenerator;
-use Zana\View\PageMeta;
+{{ securityImports }}use Zana\View\PageMeta;
 use Zana\View\View;
 
 /**
  * The "{{ route }}" page, one URL per locale.
  */
-final readonly class {{ name }}Page
+{{ access }}final readonly class {{ name }}Page
 {
     public static function routes(Router $router): void
     {

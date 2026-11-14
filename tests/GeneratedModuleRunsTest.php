@@ -59,7 +59,7 @@ final class GeneratedModuleRunsTest extends TestCase
         $generator->write($generator->planEntity('Clinics', 'Clinic'));
         $generator->write($generator->planFeature('Clinics', 'ListClinics', query: true));
         $generator->write($generator->planFeature('Clinics', 'OpenClinic'));
-        $generator->write($generator->planController('Clinics', 'Clinics'));
+        $generator->write($generator->planController('Clinics', 'Clinics', public: 'The public clinic directory'));   // 2.21: anyone may call it
 
         $app = Application::configure($this->base)
             ->withProviders(HttpServiceProvider::class, RoutingServiceProvider::class, MediatorServiceProvider::class)

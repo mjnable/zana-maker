@@ -17,9 +17,11 @@ namespace Zana\Maker;
  *         "repositories": ["Book"],
  *         "features": [
  *             {"name": "AddBook", "http": true, "fields": ["title:string", "pages:?int"]},
- *             {"name": "ListBooks", "query": true, "http": true}
+ *             {"name": "ListBooks", "query": true, "http": true, "public": "The public catalogue"}
  *         ]
  *     }
+ *
+ * An HTTP feature needs a signed-in user unless "public" says why anyone may call it (2.21, FE-68).
  *
  * The module is created when it does not exist ("web": true as make:module --web).
  */
@@ -29,13 +31,13 @@ final readonly class Plan
 
     private const array KEYS = ['schema', 'module', 'web', 'entities', 'value_objects', 'repositories', 'features'];
 
-    private const array FEATURE_KEYS = ['name', 'query', 'http', 'fields'];
+    private const array FEATURE_KEYS = ['name', 'query', 'http', 'fields', 'public'];
 
     /**
      * @param list<string> $entities
      * @param list<array{name: string, type: string}> $valueObjects
      * @param list<string> $repositories
-     * @param list<array{name: string, query: bool, http: bool, fields: list<string>}> $features
+     * @param list<array{name: string, query: bool, http: bool, fields: list<string>, public: ?string}> $features
      */
     private function __construct(
         public string $module,
@@ -119,8 +121,17 @@ final readonly class Plan
                     $problems[] = "\"features\"[{$i}]: \"{$flag}\" must be true or false.";
                 }
             }
+            if (isset($entry['public']) && (!is_string($entry['public']) || trim($entry['public']) === '')) {
+                $problems[] = "\"features\"[{$i}]: \"public\" must say why anyone may call the action, e.g. \"The public catalogue\".";
+            }
             /** @var list<string> $fields */
-            $features[] = ['name' => $entry['name'], 'query' => ($entry['query'] ?? false) === true, 'http' => ($entry['http'] ?? false) === true, 'fields' => $fields];
+            $features[] = [
+                'name' => $entry['name'],
+                'query' => ($entry['query'] ?? false) === true,
+                'http' => ($entry['http'] ?? false) === true,
+                'fields' => $fields,
+                'public' => is_string($entry['public'] ?? null) ? $entry['public'] : null,
+            ];
         }
 
         if ($problems !== [] || !is_string($module)) {
@@ -151,7 +162,8 @@ final readonly class Plan
             $commands[] = "make:feature {$this->module} {$feature['name']}"
                 . implode('', array_map(static fn (string $field): string => " --field={$field}", $feature['fields']))
                 . ($feature['query'] ? ' --query' : '')
-                . ($feature['http'] ? ' --http' : '');
+                . ($feature['http'] ? ' --http' : '')
+                . ($feature['public'] !== null ? ' --public=' . escapeshellarg($feature['public']) : '');
         }
 
         return $commands;
@@ -175,7 +187,7 @@ final readonly class Plan
             $steps[] = fn (Generator $g): array => $g->planRepository($this->module, $entity);
         }
         foreach ($this->features as $feature) {
-            $steps[] = fn (Generator $g): array => $g->planFeature($this->module, $feature['name'], $feature['query'], $feature['fields'], $feature['http']);
+            $steps[] = fn (Generator $g): array => $g->planFeature($this->module, $feature['name'], $feature['query'], $feature['fields'], $feature['http'], $feature['public']);
         }
 
         return $steps;

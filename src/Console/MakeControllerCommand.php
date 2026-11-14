@@ -20,11 +20,19 @@ final class MakeControllerCommand extends MakerCommand
         $this
             ->addArgument('module', InputArgument::REQUIRED, 'The module, e.g. Patients')
             ->addArgument('name', InputArgument::REQUIRED, 'The controller, without the Controller suffix, e.g. Measurements')
-            ->addOption('web', null, InputOption::VALUE_NONE, 'A Presentation/Web controller returning a View, with its template');
+            ->addOption('web', null, InputOption::VALUE_NONE, 'A Presentation/Web controller returning a View, with its template')
+            ->addOption('public', null, InputOption::VALUE_REQUIRED, 'Why anyone may reach it, e.g. --public="The public catalogue"; an API controller needs a signed-in user otherwise');
     }
 
     public function handle(Generator $generator, InputInterface $input, SymfonyStyle $io): int
     {
-        return $this->generate($generator, static fn (): array => $generator->planController((string) $input->getArgument('module'), (string) $input->getArgument('name'), (bool) $input->getOption('web')), $input, $io);
+        $public = $input->getOption('public');
+
+        return $this->generate($generator, static fn (): array => $generator->planController(
+            (string) $input->getArgument('module'),
+            (string) $input->getArgument('name'),
+            (bool) $input->getOption('web'),
+            is_string($public) ? $public : null,
+        ), $input, $io);
     }
 }

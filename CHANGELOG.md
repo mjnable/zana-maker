@@ -3,6 +3,21 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.21.0 — Unreleased
+
+### Changed
+
+- Generated routes say who may reach them (FE-68, ADR-033):
+  - `make:page` and `make:controller --web` write `#[PublicRoute(reason: '…')]`;
+  - `make:controller` and `make:feature --http` write `#[RequiresAuthentication]` with `AuthorizationMiddleware` on
+    the route. `--public="reason"` (and `"public"` in a plan's feature) makes one public instead. Without
+    mj-zana/security, they refuse and say to install it or pass `--public`; without `SecurityServiceProvider` in
+    `src/Bootstrap.php`, a manual step says to add it;
+  - the HTTP test of a protected action proves an anonymous request gets 401, and leaves the signed-in request,
+    which depends on the application, as an incomplete test with the request in a comment;
+  - the CRUD preview controller is public: the signed token in its link is the access.
+- `AGENTS.md`: every route says who may reach it, and `#[PublicRoute]` is never added only to silence `check`.
+
 ## 2.20.0 — 2026-11-14
 
 ### Changed

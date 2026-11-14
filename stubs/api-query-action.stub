@@ -9,13 +9,13 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Zana\Http\ResponseFactory;
 use Zana\Mediator\MediatorInterface;
-use Zana\Routing\Attribute\Route;
-
+{{ routingImports }}use Zana\Routing\Attribute\Route;
+{{ securityImports }}
 /**
  * GET /api/{{ path }}: sends {{ message }} with the values of the query string and
  * answers {"data": …}, or 422 with the field errors when they are invalid.
  */
-final readonly class {{ name }}Action
+{{ access }}final readonly class {{ name }}Action
 {
     public function __construct(
         private ApiInput $input,
@@ -24,7 +24,7 @@ final readonly class {{ name }}Action
     ) {
     }
 
-    #[Route('/api/{{ path }}', methods: ['GET'], name: '{{ route }}')]
+    #[Route('/api/{{ path }}', methods: ['GET'], name: '{{ route }}'{{ routeMiddleware }})]
     public function __invoke(ServerRequestInterface $request): ResponseInterface
     {
         return $this->responses->json(['data' => $this->mediator->send($this->input->read($request, {{ message }}::class))]);

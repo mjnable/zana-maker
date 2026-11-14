@@ -244,12 +244,49 @@ final class GeneratorTest extends TestCase
         $controller = $this->generator->planController('Patients', 'MedicalRecords');
         $this->assertSame(['modules/Patients/Presentation/Api/MedicalRecordsController.php', 'modules/Patients/PatientsModule.php'], self::paths($controller));
         $this->assertStringContainsString('namespace Modules\Patients\Presentation\Api;', $controller[0]->contents);
-        $this->assertStringContainsString("#[Route('/api/medical-records')]", $controller[0]->contents);
+        // 2.21, FE-68: an API controller needs a signed-in user, enforced on its routes.
+        $this->assertStringContainsString("#[Route('/api/medical-records', middleware: [AuthorizationMiddleware::class])]\n#[RequiresAuthentication]\nfinal class", $controller[0]->contents);
+        $this->assertStringContainsString("use Zana\\Routing\\Attribute\\Route;\nuse Zana\\Security\\Attribute\\RequiresAuthentication;\nuse Zana\\Security\\Middleware\\AuthorizationMiddleware;\n", $controller[0]->contents, 'imports in order');
         $this->assertStringContainsString("name: 'patients.medical-records.index'", $controller[0]->contents);
 
         $this->generator->write([...$entity, ...$controller]);
         foreach ([...$entity, ...$controller] as $file) {
             $this->assertCompiles($file->relativePath);
+        }
+    }
+
+    public function testGeneratedRoutesSayWhoMayReachThem(): void
+    {
+        $this->generator->write($this->generator->planModule('Shop'));
+
+        $public = $this->generator->planController('Shop', 'Catalogue', public: 'The public catalogue')[0]->contents;
+        $this->assertStringContainsString("use Zana\\Routing\\Attribute\\PublicRoute;\nuse Zana\\Routing\\Attribute\\Route;\n", $public);
+        $this->assertStringContainsString("#[Route('/api/catalogue')]\n#[PublicRoute(reason: 'The public catalogue')]\nfinal class", $public);
+
+        $web = $this->generator->planController('Shop', 'Offers', web: true)[0]->contents;
+        $this->assertStringContainsString("#[PublicRoute(reason: 'Public pages of the website')]", $web, 'web pages are public');
+
+        $page = $this->generator->planPage('Shop', 'About', ['en' => '/about'])[0]->contents;
+        $this->assertStringContainsString("#[PublicRoute(reason: 'A public page of the website')]\nfinal readonly class AboutPage", $page);
+
+        $action = $this->generator->planFeature('Shop', 'PlaceOrder', fields: ['item:string'], http: true);
+        $code = implode("\n", array_map(static fn ($f): string => $f->contents, $action));
+        $this->assertStringContainsString("#[RequiresAuthentication]\nfinal readonly class PlaceOrderAction", $code);
+        $this->assertStringContainsString("name: 'shop.place-order', middleware: [AuthorizationMiddleware::class])]", $code);
+        $this->assertStringContainsString("->assertUnauthorized();   // no signed-in user", $code, 'the generated test proves the route is closed');
+        $this->assertStringContainsString('markTestIncomplete', $code);
+
+        $preview = $this->generator->planCrud('Shop', 'Notice', ['en']);
+        $previewCode = implode("\n", array_map(static fn ($f): string => $f->contents, $preview));
+        $this->assertStringContainsString("#[PublicRoute(reason: 'A preview link: the signed token in the URL is the access, for an hour')]", $previewCode);
+
+        foreach ([['  '], ['']] as [$reason]) {
+            try {
+                $this->generator->planController('Shop', 'Empty', public: $reason);
+                $this->fail('an empty reason was accepted');
+            } catch (MakerException $e) {
+                $this->assertStringContainsString('--public needs a reason', $e->getMessage());
+            }
         }
     }
 

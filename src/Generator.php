@@ -70,10 +70,14 @@ final class Generator
      * routed to POST (GET for a query) /api/<module>/<feature> that reads and
      * validates the input through the module's ApiInput, and an HTTP test.
      *
+     * The action needs a signed-in user (2.21, FE-68): #[RequiresAuthentication]
+     * with AuthorizationMiddleware. With $public, anyone may call it, for that reason.
+     *
      * @param list<string> $fields "name:type", type string, int, float or bool; "?type" is optional
+     * @param string|null $public Why anyone may call the action; null keeps it protected
      * @return list<GeneratedFile>
      */
-    public function planFeature(string $module, string $name, bool $query = false, array $fields = [], bool $http = false): array
+    public function planFeature(string $module, string $name, bool $query = false, array $fields = [], bool $http = false, ?string $public = null): array
     {
         $this->requireModule($module);
         self::validate($name, 'feature');
@@ -112,7 +116,11 @@ final class Generator
         if ($http) {
             $api = "Modules\\{$module}\\Presentation\\Api";
             $path = self::kebab($module) . '/' . self::kebab($name);
-            $slice = [...$values, 'namespace' => $api, 'featureNamespace' => $values['namespace'], 'path' => $path, 'route' => strtolower($module) . '.' . self::kebab($name)];
+            $access = self::access($public, 'make:feature --http');
+            if ($public === null) {
+                $this->requireProviders(['Zana\Security\SecurityServiceProvider']);
+            }
+            $slice = [...$values, ...$access, 'namespace' => $api, 'featureNamespace' => $values['namespace'], 'path' => $path, 'route' => strtolower($module) . '.' . self::kebab($name)];
             if (!is_file($this->path("modules/{$module}/Presentation/Api/ApiInput.php"))) {
                 $files[] = $this->file("modules/{$module}/Presentation/Api/ApiInput.php", 'api-input', $slice);
             }
@@ -120,7 +128,7 @@ final class Generator
             $files[] = $this->file("modules/{$module}/Tests/Presentation/{$name}ApiTest.php", 'api-test', [
                 ...$slice,
                 'namespace' => "Modules\\{$module}\\Tests\\Presentation",
-                ...self::apiTest("/api/{$path}", $query, $required),
+                ...self::apiTest("/api/{$path}", $query, $required, $public === null, $name),
             ]);
             $services[] = "\$services->singleton(\\{$api}\\ApiInput::class);";
             $services[] = "\$services->transient(\\{$api}\\{$name}Action::class);";
@@ -235,19 +243,26 @@ final class Generator
     }
 
     /**
-     * An API controller with a #[Route] example.
+     * An API controller with a #[Route] example. It needs a signed-in user
+     * (2.21, FE-68), unless $public gives the reason anyone may call it. A web
+     * controller serves public pages.
      *
+     * @param string|null $public Why anyone may call an API controller; null keeps it protected
      * @return list<GeneratedFile>
      */
-    public function planController(string $module, string $name, bool $web = false): array
+    public function planController(string $module, string $name, bool $web = false, ?string $public = null): array
     {
         $this->requireModule($module);
         self::validate($name, 'controller');
         $slug = self::kebab($name);
         $layer = $web ? 'Web' : 'Api';
+        if (!$web && $public === null) {
+            $this->requireProviders(['Zana\Security\SecurityServiceProvider']);
+        }
 
         $controller = "\\Modules\\{$module}\\Presentation\\{$layer}\\{$name}Controller::class";
         $values = [
+            ...self::access($web ? ($public ?? 'Public pages of the website') : $public, 'make:controller'),
             'module' => $module,
             'name' => $name,
             'namespace' => "Modules\\{$module}\\Presentation\\{$layer}",
@@ -280,6 +295,7 @@ final class Generator
         $slug = self::kebab($name);
         $page = "\\Modules\\{$module}\\Presentation\\Web\\{$name}Page::class";
         $values = [
+            ...self::access('A public page of the website', 'make:page'),   // 2.21, FE-68
             'module' => $module,
             'name' => $name,
             'namespace' => "Modules\\{$module}\\Presentation\\Web",
@@ -551,12 +567,14 @@ final class Generator
 
     /**
      * The request of the slice's HTTP test, and a test of invalid input when
-     * one can be made.
+     * one can be made. For a protected action (2.21, FE-68), the test proves
+     * that an anonymous request is refused, and the request of a signed-in
+     * user is left to complete: how to sign one in belongs to the application.
      *
      * @param list<array{name: string, type: string, optional: bool}> $required
      * @return array{request: string, invalid: string}
      */
-    private static function apiTest(string $uri, bool $query, array $required): array
+    private static function apiTest(string $uri, bool $query, array $required, bool $protected = false, string $name = ''): array
     {
         $examples = array_map(static fn (array $f): string => var_export($f['name'], true) . ' => ' . self::FIELD_EXAMPLES[$f['type']], $required);
         if ($query) {
@@ -565,9 +583,21 @@ final class Generator
                 'float' => '1.5',
                 default => '1',
             }, $required);
-            $request = "\$this->http()->get('{$uri}" . ($parameters === [] ? '' : '?' . implode('&', $parameters)) . "')->assertOk()->assertJsonPath('data', []);";
+            $send = "\$this->http()->get('{$uri}" . ($parameters === [] ? '' : '?' . implode('&', $parameters)) . "')";
+            $request = "{$send}->assertOk()->assertJsonPath('data', []);";
         } else {
-            $request = "\$this->http()->post('{$uri}', [" . implode(', ', $examples) . '])->assertNoContent();';
+            $send = "\$this->http()->post('{$uri}', [" . implode(', ', $examples) . '])';
+            $request = "{$send}->assertNoContent();";
+        }
+
+        if ($protected) {
+            return [
+                'request' => "{$send}->assertUnauthorized();   // no signed-in user: the route is closed",
+                'invalid' => "\n    public function test{$name}ForASignedInUser(): void\n    {\n"
+                    . "        // Sign in a user of this application, then send the request, e.g.:\n"
+                    . '        // ' . str_replace("\$this->http()", "\$this->http()->withToken(\$token)", $request) . "\n"
+                    . "        \$this->markTestIncomplete('Sign in a user of this application, then send the request: see the comment above.');\n    }\n",
+            ];
         }
 
         $invalid = match (true) {
@@ -581,6 +611,42 @@ final class Generator
         };
 
         return ['request' => $request, 'invalid' => $invalid];
+    }
+
+    /**
+     * Who may reach a generated route (2.21, FE-68, ADR-033): anyone, for the
+     * reason given, or a signed-in user, enforced by AuthorizationMiddleware.
+     * The values fill the stubs' routingImports and securityImports (each where
+     * its lines sort), access and routeMiddleware.
+     *
+     * @return array{routingImports: string, securityImports: string, access: string, routeMiddleware: string}
+     *
+     * @throws MakerException For an empty reason, or a protected route without mj-zana/security
+     */
+    private static function access(?string $public, string $command): array
+    {
+        if ($public !== null) {
+            if (trim($public) === '') {
+                throw new MakerException('--public needs a reason: say why anyone may reach the route, e.g. --public="The public catalogue".');
+            }
+
+            return [
+                'routingImports' => "use Zana\\Routing\\Attribute\\PublicRoute;\n",
+                'securityImports' => '',
+                'access' => '#[PublicRoute(reason: ' . var_export(trim($public), true) . ")]\n",
+                'routeMiddleware' => '',
+            ];
+        }
+        if (!class_exists('Zana\Security\Attribute\RequiresAuthentication')) {
+            throw new MakerException("{$command} generates a route for signed-in users, which needs mj-zana/security: composer require mj-zana/security. Or pass --public=\"reason\" if anyone may reach it.");
+        }
+
+        return [
+            'routingImports' => '',
+            'securityImports' => "use Zana\\Security\\Attribute\\RequiresAuthentication;\nuse Zana\\Security\\Middleware\\AuthorizationMiddleware;\n",
+            'access' => "#[RequiresAuthentication]\n",
+            'routeMiddleware' => ', middleware: [AuthorizationMiddleware::class]',
+        ];
     }
 
     /**

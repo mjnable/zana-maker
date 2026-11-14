@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace {{ namespace }};
 
-use Zana\Routing\Attribute\Route;
-use Zana\View\View;
+{{ routingImports }}use Zana\Routing\Attribute\Route;
+{{ securityImports }}use Zana\View\View;
 
-#[Route('/{{ path }}')]
-final class {{ name }}Controller
+#[Route('/{{ path }}'{{ routeMiddleware }})]
+{{ access }}final class {{ name }}Controller
 {
     #[Route('', methods: ['GET'], name: '{{ route }}.index')]
     public function index(): View

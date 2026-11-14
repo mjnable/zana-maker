@@ -6,6 +6,7 @@ namespace {{ namespace }};
 
 use Modules\{{ module }}\Infrastructure\{{ name }}Repository;
 use Zana\Http\Exception\NotFoundHttpException;
+use Zana\Routing\Attribute\PublicRoute;
 use Zana\Security\InvalidTokenException;
 use Zana\Security\TokenSigner;
 use Zana\View\View;
@@ -13,6 +14,7 @@ use Zana\View\View;
 /**
  * Shows a draft to anyone holding a signed preview link.
  */
+#[PublicRoute(reason: 'A preview link: the signed token in the URL is the access, for an hour')]
 final readonly class {{ name }}Preview
 {
     public function __construct(private {{ name }}Repository $records, private TokenSigner $signer)
