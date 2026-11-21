@@ -61,6 +61,9 @@ https://raw.githubusercontent.com/mjnable/zana-docs/{{ version }}/llms.txt.
   - `Presentation`: controllers, console commands, templates. Goes through Application, never Domain
     or Infrastructure directly.
   - `Contracts`: what other modules may use. Never depend on another module's internals.
+- **Shared kernel:** the module `Contracts` listed in `config/architecture.php` (`shared_kernel`) may be used
+  by every layer, Domain included. Put only values there (money, a clock, codes), never a service; do not
+  add a namespace to it to silence a finding.
 - `{{ console }} check` enforces these rules; do not work around a finding, fix the design.
 
 ## Services and configuration

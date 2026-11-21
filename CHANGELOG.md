@@ -3,6 +3,13 @@
 All Zana packages share one version number and are released together. A release that did
 not change this package is not listed.
 
+## 2.30.0 — Unreleased
+
+### Changed
+
+- `AGENTS.md` names the shared kernel (2.30): the module Contracts in `config/architecture.php` that every layer may
+  use, for values only, and never to be widened to silence a finding.
+
 ## 2.25.1 — 2026-11-15
 
 ### Changed
